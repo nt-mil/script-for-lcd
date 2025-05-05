@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "dev_display.h": "c",
+        "macro.h": "c"
+    }
+}

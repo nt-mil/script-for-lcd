@@ -1,4 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
+#include <stdio.h>
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -21,13 +22,20 @@ void SystemClock_Config(void);
 
 int main(void)
 {
-    HAL_Initialization();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
+    /* Configure the system clock */
     SystemClock_Config();
+
+    Init_Peripherals();
 
     while(1)
     {
-        
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(200);
+        HAL_Delay(200);
+        printf("hello, Harry\n");
     }
     return 0;
 }

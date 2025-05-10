@@ -1,4 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
+#include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_init.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -8,6 +9,8 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart2;
+SPI_HandleTypeDef hspi2;
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -16,18 +19,12 @@
 /***********************************************************
  * Initialize HAL
  ***********************************************************/
-void HAL_Initialization(void)
+void Init_Peripherals(void)
 {
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
-
-    /* Configure the system clock */
-    SystemClock_Config();
-
     /* Initialize all configured peripherals */
     GPIO_Init();
-    USART2_UART_Init();
-    SPI2_Init();
+    // UART2_Init();
+    // SPI2_Init();
 }
 
 /***********************************************************
@@ -69,7 +66,7 @@ void GPIO_Init(void)
 	HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 }
 
-void USART2_UART_Init(void)
+void UART2_Init(void)
 {
 	huart2.Instance = USART2;
 	huart2.Init.BaudRate = 115200;
@@ -81,11 +78,11 @@ void USART2_UART_Init(void)
 	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
 	if (HAL_UART_Init(&huart2) != HAL_OK)
 	{
-		Error_Handler();
+		// Error_Handler();
 	}
 }
 
-void SPI2_UART_Init(void)
+void SPI2_Init(void)
 {
 	hspi2.Instance = SPI2;
 	hspi2.Init.Mode = SPI_MODE_MASTER;
@@ -101,7 +98,7 @@ void SPI2_UART_Init(void)
 	hspi2.Init.CRCPolynomial = 10;
 	if (HAL_SPI_Init(&hspi2) != HAL_OK)
 	{
-	   Error_Handler();
+	//    Error_Handler();
 	}
 }
 

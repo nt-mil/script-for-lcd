@@ -42,7 +42,24 @@ C_SOURCES =  \
 	Core/Startup/system_stm32f4xx.c \
 	Core/Interrupt/stm32f4xx_it.c \
 	Core/HAL/stm32f4xx_hal_init.c \
-	Core/HAL/stm32f4xx_hal_timebase_tim.c
+	Core/HAL/stm32f4xx_hal_timebase_tim.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -107,7 +124,6 @@ C_INCLUDES =  \
 	-ICore/Config \
 	-ICore/HAL \
 	-ICore/Interrupt \
-	-ICore/ \
 	-IDrivers/STM32F4xx_HAL_Driver/Inc \
 	-IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 	-IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
@@ -186,5 +202,37 @@ clean:
 # dependencies
 #######################################
 -include $(wildcard $(BUILD_DIR)/*.d)
+
+###
+## CUSTOM COMMANDS
+###
+
+# Flash with J-Link
+# Configure device name, everything else should remain the same
+jflash: $(BUILD_DIR)/jflash
+	JLink -commanderscript $<
+# Change to yours
+device = STM32F401RE
+# First create a file with all commands
+$(BUILD_DIR)/jflash: $(BUILD_DIR)/$(TARGET).bin
+	@touch $@
+	@echo device $(device) > $@
+	@echo -e si 1'\n'speed 4000 >> $@
+	@echo loadbin $< 0x8000000 >> $@
+	@echo -e r'\n'g'\n'qc >> $@
+
+# FLash with ST-LINK
+stflash: $(BUILD_DIR)/$(TARGET).bin
+	st-flash --reset write $< 0x8000000
+
+# Flash with UART module
+# If you have problem with flashing but it does connect,
+# remove '-e 0' so that it will erase flash contents and
+# flash firmware fresh
+# uflash: $(BUILD_DIR)/$(TARGET).bin
+# 	# This one is used if you have UART module with RTS and DTR pins
+# 	stm32flash -b 115200 -e 0 -R -i rts,dtr,-rts:rts,-dtr,-rts -v -w $< $(PORT)
+# 	# Else use this one and manualy set your MCU to bootloader mode
+# 	#stm32flash -b 115200 -e 0 -v -w $< $(PORT)
 
 # *** EOF ***

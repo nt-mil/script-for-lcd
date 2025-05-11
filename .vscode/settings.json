@@ -1,5 +1,11 @@
 {
     "files.associations": {
-        "stdio.h": "c"
-    }
+        "stdio.h": "c",
+        "freertos.h": "c",
+        "task.h": "c",
+        "main.h": "c",
+        "freertosconfig.h": "c",
+        "stdint.h": "c"
+    },
+    "cortex-debug.variableUseNaturalFormat": false
 }

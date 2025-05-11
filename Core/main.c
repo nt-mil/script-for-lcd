@@ -13,8 +13,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-
+static void SystemClock_Config(void);
+static void Task_Init(void);
+static void Idle_Task(void *param);
 /**
   * @brief  The application entry point.
   * @retval int
@@ -30,12 +31,11 @@ int main(void)
 
     Init_Peripherals();
 
+    Task_Init();
+
     while(1)
     {
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(200);
-        HAL_Delay(200);
-        printf("hello, Harry\n");
+
     }
     return 0;
 }
@@ -84,6 +84,26 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+ * @brief User Task initialization
+ * @retval None
+*/
+void Task_Init(void)
+{
+    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 128, NULL, 2, NULL);
+    configASSERT(ret == pdPASS);
+
+    vTaskStartScheduler();
+}
+
+void Idle_Task(void *param)
+{
+    for (;;)
+    {
+        printf("hello, this is idle task\n");
+    }
 }
 
 /**

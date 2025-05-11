@@ -22,7 +22,7 @@ TARGET = sample
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT =
 
 
 #######################################
@@ -59,7 +59,16 @@ C_SOURCES =  \
 	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
 	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
 	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+	Middlewares/FreeRTOS/croutine.c \
+	Middlewares/FreeRTOS/event_groups.c \
+	Middlewares/FreeRTOS/list.c \
+	Middlewares/FreeRTOS/queue.c \
+	Middlewares/FreeRTOS/stream_buffer.c \
+	Middlewares/FreeRTOS/tasks.c \
+	Middlewares/FreeRTOS/timers.c \
+	Middlewares/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
+	Middlewares/FreeRTOS/portable/MemMang/heap_4.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -127,8 +136,9 @@ C_INCLUDES =  \
 	-IDrivers/STM32F4xx_HAL_Driver/Inc \
 	-IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 	-IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
-	-IDrivers/CMSIS/Include
-
+	-IDrivers/CMSIS/Include \
+	-IMiddlewares/FreeRTOS/include \
+	-IMiddlewares/FreeRTOS/portable/GCC/ARM_CM4F 
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

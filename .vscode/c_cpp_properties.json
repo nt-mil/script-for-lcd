@@ -11,7 +11,9 @@
                "Drivers/STM32F4xx_HAL_Driver/Inc",
                "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
                "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
-               "Drivers/CMSIS/Include"
+               "Drivers/CMSIS/Include",
+               "Middlewares/FreeRTOS/include",
+               "Middlewares/FreeRTOS/portable/GCC/ARM_CM4F"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

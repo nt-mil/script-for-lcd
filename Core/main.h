@@ -27,8 +27,15 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdio.h>
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_init.h"
+#include "macro.h"
+
+/// FreeRTOS related header files
+#include "FreeRTOS.h"
+#include "task.h"
+#include "event_groups.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */

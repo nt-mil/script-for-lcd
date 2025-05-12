@@ -1,6 +1,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_init.h"
+#include "macro.h"
+#include "dev_lcd.h"
 #include <stdio.h>
 
 /* Private typedef -----------------------------------------------------------*/
@@ -221,36 +223,42 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     }
 
     __HAL_LINKDMA(spiHandle,hdmatx,hdma_spi2_tx);
+
+    /* SPI2 interrupt Init */
+    HAL_NVIC_SetPriority(SPI2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(SPI2_IRQn);
   }
 }
 
 void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 {
+    if(spiHandle->Instance==SPI2)
+    {
+        /* Peripheral clock disable */
+        __HAL_RCC_SPI2_CLK_DISABLE();
 
-  if(spiHandle->Instance==SPI2)
-  {
-    /* Peripheral clock disable */
-    __HAL_RCC_SPI2_CLK_DISABLE();
+        /**SPI2 GPIO Configuration
+        PC3     ------> SPI2_MOSI
+        PB10     ------> SPI2_SCK
+        */
+        HAL_GPIO_DeInit(GPIOC, GPIO_PIN_3);
 
-    /**SPI2 GPIO Configuration
-    PC3     ------> SPI2_MOSI
-    PB10     ------> SPI2_SCK
-    */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_3);
+        HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+        HAL_GPIO_DeInit(LCD_GPIO_PORT, LCD_RESET_PIN | LCD_DC_PIN | LCD_CS_PIN);
 
-    HAL_GPIO_DeInit(LCD_GPIO_PORT, LCD_RESET_PIN | LCD_DC_PIN | LCD_CS_PIN);
+        /* SPI2 DMA DeInit */
+        HAL_DMA_DeInit(spiHandle->hdmatx);
 
-    /* SPI2 DMA DeInit */
-    HAL_DMA_DeInit(spiHandle->hdmatx);
-  }
+        /* SPI2 interrupt Deinit */
+        HAL_NVIC_DisableIRQ(SPI2_IRQn);
+    }
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance == SPI2) 
     {
-
+        HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_SET); // release CS
     }
 }

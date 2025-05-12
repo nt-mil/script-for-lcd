@@ -68,7 +68,8 @@ C_SOURCES =  \
 	Third_Parties/FreeRTOS/tasks.c \
 	Third_Parties/FreeRTOS/timers.c \
 	Third_Parties/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
-	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c
+	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
+	Devices/dev_lcd.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -138,7 +139,8 @@ C_INCLUDES =  \
 	-IThird_Parties/CMSIS/Device/ST/STM32F4xx/Include \
 	-IThird_Parties/CMSIS/Include \
 	-IThird_Parties/FreeRTOS/include \
-	-IThird_Parties/FreeRTOS/portable/GCC/ARM_CM4F
+	-IThird_Parties/FreeRTOS/portable/GCC/ARM_CM4F \
+	-IDevices
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

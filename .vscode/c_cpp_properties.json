@@ -8,12 +8,13 @@
                "Core/Config",
                "Core/HAL",
                "Core/Interrupt",
-               "Drivers/STM32F4xx_HAL_Driver/Inc",
-               "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
-               "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
-               "Drivers/CMSIS/Include",
-               "Middlewares/FreeRTOS/include",
-               "Middlewares/FreeRTOS/portable/GCC/ARM_CM4F"
+               "Third_Parties/STM32F4xx_HAL_Driver/Inc",
+               "Third_Parties/STM32F4xx_HAL_Driver/Inc/Legacy",
+               "Third_Parties/CMSIS/Device/ST/STM32F4xx/Include",
+               "Third_Parties/CMSIS/Include",
+               "Third_Parties/FreeRTOS/include",
+               "Third_Parties/FreeRTOS/portable/GCC/ARM_CM4F",
+               "Devices"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

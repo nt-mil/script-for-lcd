@@ -20,6 +20,8 @@ static void Idle_Task(void *param);
   * @brief  The application entry point.
   * @retval int
   */
+extern SPI_HandleTypeDef hspi2;
+extern uint8_t trigger;
 
 int main(void)
 {
@@ -30,6 +32,8 @@ int main(void)
     SystemClock_Config();
 
     Init_Peripherals();
+
+    // HAL_SPI_Transmit(&hspi2, test_data, sizeof(test_data), 100);
 
     Task_Init();
 
@@ -102,7 +106,13 @@ void Idle_Task(void *param)
 {
     for (;;)
     {
-        printf("hello, this is idle task\n");
+        if (trigger == 1)
+        {
+            uint8_t test_data[4] = {0x01, 0x02, 0x03, 0x04};
+            HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_RESET);
+            HAL_SPI_Transmit_DMA(&hspi2, &test_data[0], sizeof(test_data));
+            trigger = 0;
+        }
     }
 }
 

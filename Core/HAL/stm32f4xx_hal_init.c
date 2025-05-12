@@ -14,6 +14,7 @@ UART_HandleTypeDef huart2;
 SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef hdma_spi2_tx;
 
+uint8_t trigger = 1;
 /* Private function prototypes -----------------------------------------------*/
 
 /* External functions --------------------------------------------------------*/
@@ -50,15 +51,21 @@ void GPIO_Init(void)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-    /*Config SPI GPIO pin: CS, DC, Reset*/
-    GPIO_InitStruct.Pin = LCD_BACKLIGHT_PIN | LCD_CS_PIN | LCD_DC_PIN | LCD_RESET_PIN;
+    /*Config SPI GPIO pin: BACKLIGHT, CS, DC, Reset*/
+    GPIO_InitStruct.Pin = LCD_BACKLIGHT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = LCD_CS_PIN | LCD_DC_PIN | LCD_RESET_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 	HAL_GPIO_Init(LCD_GPIO_PORT, &GPIO_InitStruct);
 
     /*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_RESET); // backlight off
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_SET); // backlight off
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN | LCD_RESET_PIN, GPIO_PIN_SET); // active low
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_DC_PIN, GPIO_PIN_RESET); // cmd mode by default
 }
@@ -104,7 +111,7 @@ void SPI2_Init(void)
 	hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
 	hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
 	hspi2.Init.NSS = SPI_NSS_SOFT;
-	hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+	hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
 	hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
 	hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
 	hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -234,7 +241,7 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
 
-    // HAL_GPIO_DeInit(LCD_GPIO_PORT, LCD_RESET_PIN | LCD_DC_PIN | LCD_CS_PIN);
+    HAL_GPIO_DeInit(LCD_GPIO_PORT, LCD_RESET_PIN | LCD_DC_PIN | LCD_CS_PIN);
 
     /* SPI2 DMA DeInit */
     HAL_DMA_DeInit(spiHandle->hdmatx);
@@ -245,6 +252,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance == SPI2) {
         // Đặt breakpoint ở đây để xác nhận SPI đã truyền xong
+        trigger = 1;
         HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_SET);
         printf("done\n");
     }

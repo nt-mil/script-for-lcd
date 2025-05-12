@@ -24,6 +24,7 @@ void DebugMon_Handler(void);
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 void TIM5_IRQHandler(void);
+void DMA1_Stream4_IRQHandler(void);
 
 #ifdef __cplusplus
 }

@@ -14,6 +14,7 @@
 
 
 /* External variables --------------------------------------------------------*/
+extern DMA_HandleTypeDef hdma_spi2_tx;
 extern TIM_HandleTypeDef htim5;
 
 /******************************************************************************/
@@ -80,4 +81,12 @@ void DebugMon_Handler(void)
 void TIM5_IRQHandler(void)
 {
   HAL_TIM_IRQHandler(&htim5);
+}
+
+/**
+  * @brief This function handles DMA1 stream4 global interrupt.
+  */
+void DMA1_Stream4_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_spi2_tx);
 }

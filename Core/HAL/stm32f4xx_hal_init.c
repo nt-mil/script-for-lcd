@@ -14,7 +14,6 @@ UART_HandleTypeDef huart2;
 SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef hdma_spi2_tx;
 
-uint8_t trigger = 1;
 /* Private function prototypes -----------------------------------------------*/
 
 /* External functions --------------------------------------------------------*/
@@ -65,7 +64,7 @@ void GPIO_Init(void)
 	HAL_GPIO_Init(LCD_GPIO_PORT, &GPIO_InitStruct);
 
     /*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_SET); // backlight off
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_RESET); // backlight off
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN | LCD_RESET_PIN, GPIO_PIN_SET); // active low
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_DC_PIN, GPIO_PIN_RESET); // cmd mode by default
 }
@@ -250,10 +249,8 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    if (hspi->Instance == SPI2) {
-        // Đặt breakpoint ở đây để xác nhận SPI đã truyền xong
-        trigger = 1;
-        HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_SET);
-        printf("done\n");
+    if (hspi->Instance == SPI2) 
+    {
+
     }
 }

@@ -21,7 +21,6 @@ static void Idle_Task(void *param);
   * @retval int
   */
 extern SPI_HandleTypeDef hspi2;
-extern uint8_t trigger;
 
 int main(void)
 {
@@ -96,7 +95,7 @@ void SystemClock_Config(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 128, NULL, 2, NULL);
+    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 128, NULL, 20, NULL);
     configASSERT(ret == pdPASS);
 
     vTaskStartScheduler();
@@ -106,13 +105,7 @@ void Idle_Task(void *param)
 {
     for (;;)
     {
-        if (trigger == 1)
-        {
-            uint8_t test_data[4] = {0x01, 0x02, 0x03, 0x04};
-            HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_RESET);
-            HAL_SPI_Transmit_DMA(&hspi2, &test_data[0], sizeof(test_data));
-            trigger = 0;
-        }
+        printf("idle task\n");
     }
 }
 

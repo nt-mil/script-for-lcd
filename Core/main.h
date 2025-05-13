@@ -35,40 +35,18 @@ extern "C" {
 /// FreeRTOS related header files
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timers.h"
 #include "event_groups.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+enum
+{
+    DISPLAY_EVENT_UPDATE,
+    DISPLAY_EVENT_PERIOD,
+};
 
-/* USER CODE END Includes */
+EventGroupHandle_t display_event;
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
-
-/* USER CODE END ET */
-
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
-
-/* Private defines -----------------------------------------------------------*/
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }

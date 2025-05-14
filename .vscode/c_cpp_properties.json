@@ -14,7 +14,9 @@
                "Third_Parties/CMSIS/Include",
                "Third_Parties/FreeRTOS/include",
                "Third_Parties/FreeRTOS/portable/GCC/ARM_CM4F",
-               "Devices"
+               "Middlewares/Display/"
+               "Drivers/Display",
+               "Drivers/Display/ILI9341"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

@@ -6,6 +6,9 @@
 
 #define DMA_MAX_COUNTS (10)
 
+#define RESET_PORT_DELAY    (5)
+#define SLEEP_OUT_DELAY     (120)
+
 extern SPI_HandleTypeDef hspi2;
 extern EventGroupHandle_t display_event;
 
@@ -18,8 +21,10 @@ typedef struct {
 
 static dma_ctrl_t dma_ctrl;
 
-static state_t current_state = STATE_STOP;
-static state_t target_state = STATE_READY;
+static initial_state_t init_state;
+static operation_state_t current_state = STATE_READY;
+static operation_state_t target_state = STATE_READY;
+static uint16_t init_timeout = 0;
 static uint8_t init_seq_index = 0;
 static uint8_t frame_buffer[FB_SIZE];
 
@@ -47,13 +52,6 @@ static const uint8_t init_cmds[] = {
     0x29, 0  // Display ON
 };
 
-static void send(data_type_t type, const uint8_t* data, uint16_t len, bool use_dma);
-static void process_lcd_init(void);
-static void hw_reset(void);
-static void reset_sequence(void);
-static void init_dma_state(void);
-static uint8_t* ili9341_get_framebuffer(void);
-
 static void send(data_type_t type, const uint8_t* data, uint16_t len, bool use_dma)
 {
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_DC_PIN, (type == SEND_COMMAND) ? GPIO_PIN_RESET : GPIO_PIN_SET);
@@ -68,16 +66,26 @@ static void send(data_type_t type, const uint8_t* data, uint16_t len, bool use_d
     }
 }
 
+static bool check_init_timeout(uint16_t timeout)
+{
+    if (init_timeout >= timeout)
+    {
+        return true;
+    }
+    return false;
+}
+
 static void hw_reset(void)
 {
-    HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_SET);
-    HAL_Delay(10);
-    HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_RESET);
-    HAL_Delay(120);
+    // HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_SET);
+    // HAL_Delay(1);
+    // HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_RESET);
 }
 
 void reset_sequence(void)
 {
+    init_seq_index = 0;
+
     while (init_seq_index < sizeof(init_cmds))
     {
         uint8_t cmd = init_cmds[init_seq_index++];
@@ -90,15 +98,73 @@ void reset_sequence(void)
             init_seq_index += len;
         }
     }
-    target_state = STATE_RUNNING;
 }
 
-void process_lcd_init(void)
+void check_wait_init_timeout(TimerHandle_t timer)
 {
-    init_seq_index = 0;
+    switch (init_state)
+    {
+        case STATE_HW_RESET:
+            xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+            break;
 
-    hw_reset();
-    reset_sequence();
+        case STATE_SLEEP_OUT:
+            if (check_init_timeout(RESET_PORT_DELAY))
+            {
+                xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+            }
+            break;
+
+        case STATE_INITAL_CMD:
+            if (check_init_timeout(SLEEP_OUT_DELAY))
+            {
+                xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+            }
+            break;
+        
+        case STATE_COMPLETED:
+            break;
+    }
+    init_timeout++;
+}
+
+static void process_lcd_init(void)
+{
+    initial_state_t pre_init_state = init_state;
+
+    switch (init_state)
+    {
+        case STATE_HW_RESET:
+            hw_reset();
+            init_state = STATE_SLEEP_OUT;
+            break;
+
+        case STATE_SLEEP_OUT:
+            if (check_init_timeout(RESET_PORT_DELAY))
+            {
+                // send command sleep out
+                init_state = STATE_INITAL_CMD;
+            }
+            break;
+
+        case STATE_INITAL_CMD:
+            if (check_init_timeout(SLEEP_OUT_DELAY))
+            {
+                reset_sequence();
+                // write zero screen
+                init_state = STATE_COMPLETED;
+            }
+            break;
+        
+        case STATE_COMPLETED:
+            current_state = STATE_RUNNING;
+            break;
+    }
+
+    if (pre_init_state != init_state)
+    {
+        init_timeout = 0;
+    }
 }
 
 static void init_dma_state(void)
@@ -146,11 +212,26 @@ static void wait_for_dma_writting_row_complete(void)
 
 static void ili9341_init(void)
 {
-    current_state = STATE_STOP;
-    target_state = STATE_READY;
-    init_seq_index = 0;
+    static bool init = false;
+    TimerHandle_t init_timer;
 
-    init_dma_state();
+    if (!init)
+    {
+        current_state = STATE_READY;
+        target_state = STATE_READY;
+        init_seq_index = 0;
+
+        init_dma_state();
+        dma_ctrl.is_writting_completed = true;
+
+        init_timer = xTimerCreate("CheckWaitInitTime", pdMS_TO_TICKS(100), pdTRUE, (void *)0, check_wait_init_timeout);
+        if (init_timer != NULL)
+        {
+            xTimerStart(init_timer, 0);
+        }
+        
+        init = true;
+    }
 }
 
 static void update_lcd_state(void)
@@ -185,20 +266,23 @@ void ili9341_control(void)
     }
     else
     {
-        update_lcd_state();
+        // update_lcd_state();
 
         switch (current_state)
         {
             case STATE_READY:
                 current_state = STATE_INITIALIZING;
+                init_state = STATE_HW_RESET;
+                xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
                 break;
 
             case STATE_INITIALIZING:
                 process_lcd_init();
+                xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
                 break;
 
             case STATE_RUNNING:
-                if (HAL_SPI_GetState(&hspi2) == HAL_SPI_STATE_READY)
+                if (dma_ctrl.is_writting_completed == true)
                 {
                     dma_send_row(0);
                 }

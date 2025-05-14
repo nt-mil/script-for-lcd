@@ -10,11 +10,18 @@
 #define BYTE_PER_ROW        (WIDTH * BIT_PER_PIXEL /8)
 
 typedef enum {
+    STATE_HW_RESET = 0,
+    STATE_SLEEP_OUT,
+    STATE_INITAL_CMD,
+    STATE_COMPLETED,
+} initial_state_t;
+
+typedef enum {
     STATE_READY = 0,
     STATE_INITIALIZING,
     STATE_RUNNING,
     STATE_STOP,
-} state_t;
+} operation_state_t;
 
 typedef enum {
     SEND_COMMAND = 0,

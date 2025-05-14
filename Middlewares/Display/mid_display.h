@@ -3,7 +3,7 @@
 
 enum
 {
-    DISPLAY_EVENT_UPDATE,
+    DISPLAY_EVENT_UPDATE = 1,
     DISPLAY_EVENT_PERIOD,
 };
 

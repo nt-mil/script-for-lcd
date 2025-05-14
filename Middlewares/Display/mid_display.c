@@ -33,6 +33,8 @@ void display_task(void* param)
 
     bit_is_waiting_for = DISPLAY_EVENT_UPDATE;
 
+    xEventGroupSetBits(display_event, bit_is_waiting_for); // start lcd init
+
     for (;;)
     {
         bit_pending = xEventGroupWaitBits(display_event, bit_is_waiting_for, pdTRUE, pdFALSE, pdMS_TO_TICKS(portMAX_DELAY));

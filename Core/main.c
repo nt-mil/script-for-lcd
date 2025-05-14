@@ -16,7 +16,7 @@
 static void SystemClock_Config(void);
 static void Task_Init(void);
 static void Idle_Task(void *param);
-static void Event_Init(void);
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -33,9 +33,7 @@ int main(void)
 
     Init_Peripherals();
 
-    Event_Init();
-
-    // HAL_SPI_Transmit(&hspi2, test_data, sizeof(test_data), 100);
+    display_init();
 
     Task_Init();
 
@@ -98,7 +96,10 @@ void SystemClock_Config(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 128, NULL, 20, NULL);
+    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 30, NULL, 20, NULL);
+    configASSERT(ret == pdPASS);
+
+    ret = xTaskCreate(display_task, "display", 300, NULL, 5, NULL);
     configASSERT(ret == pdPASS);
 
     vTaskStartScheduler();
@@ -110,16 +111,6 @@ void Idle_Task(void *param)
     {
         printf("idle task\n");
     }
-}
-
-/**
- * @brief User Event initialization
- * @retval None
-*/
-
-void Event_Init(void)
-{
-    display_event = xEventGroupCreate();
 }
 
 /**

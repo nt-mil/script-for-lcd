@@ -28,6 +28,8 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_init.h"
 #include "macro.h"
@@ -38,13 +40,12 @@ extern "C" {
 #include "timers.h"
 #include "event_groups.h"
 
-enum
-{
-    DISPLAY_EVENT_UPDATE,
-    DISPLAY_EVENT_PERIOD,
-};
+// driver headers
+#include "ili9341.h"
 
-EventGroupHandle_t display_event;
+// middleware headers
+#include "mid_display.h"
+
 
 void Error_Handler(void);
 

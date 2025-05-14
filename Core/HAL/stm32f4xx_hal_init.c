@@ -2,7 +2,6 @@
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_init.h"
 #include "macro.h"
-#include "dev_lcd.h"
 #include <stdio.h>
 
 /* Private typedef -----------------------------------------------------------*/

@@ -54,8 +54,6 @@ C_SOURCES =  \
 	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
 	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
 	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
-	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
 	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
 	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
 	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
@@ -69,7 +67,8 @@ C_SOURCES =  \
 	Third_Parties/FreeRTOS/timers.c \
 	Third_Parties/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
 	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
-	Devices/dev_lcd.c
+	Middlewares/Display/mid_display.c \
+	Drivers/Display/ILI9341/ili9341.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -140,7 +139,9 @@ C_INCLUDES =  \
 	-IThird_Parties/CMSIS/Include \
 	-IThird_Parties/FreeRTOS/include \
 	-IThird_Parties/FreeRTOS/portable/GCC/ARM_CM4F \
-	-IDevices
+	-IMiddlewares/Display \
+	-IDrivers/Display \
+	-IDrivers/Display/ILI9341
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

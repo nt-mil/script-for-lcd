@@ -16,10 +16,12 @@
 static void SystemClock_Config(void);
 static void Task_Init(void);
 static void Idle_Task(void *param);
+
 /**
   * @brief  The application entry point.
   * @retval int
   */
+extern SPI_HandleTypeDef hspi2;
 
 int main(void)
 {
@@ -30,6 +32,8 @@ int main(void)
     SystemClock_Config();
 
     Init_Peripherals();
+
+    display_init();
 
     Task_Init();
 
@@ -92,7 +96,10 @@ void SystemClock_Config(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 128, NULL, 2, NULL);
+    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 30, NULL, 20, NULL);
+    configASSERT(ret == pdPASS);
+
+    ret = xTaskCreate(display_task, "display", 300, NULL, 5, NULL);
     configASSERT(ret == pdPASS);
 
     vTaskStartScheduler();
@@ -102,7 +109,7 @@ void Idle_Task(void *param)
 {
     for (;;)
     {
-        printf("hello, this is idle task\n");
+        printf("idle task\n");
     }
 }
 

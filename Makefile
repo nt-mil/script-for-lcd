@@ -43,32 +43,32 @@ C_SOURCES =  \
 	Core/Interrupt/stm32f4xx_it.c \
 	Core/HAL/stm32f4xx_hal_init.c \
 	Core/HAL/stm32f4xx_hal_timebase_tim.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
-	Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
-	Middlewares/FreeRTOS/croutine.c \
-	Middlewares/FreeRTOS/event_groups.c \
-	Middlewares/FreeRTOS/list.c \
-	Middlewares/FreeRTOS/queue.c \
-	Middlewares/FreeRTOS/stream_buffer.c \
-	Middlewares/FreeRTOS/tasks.c \
-	Middlewares/FreeRTOS/timers.c \
-	Middlewares/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
-	Middlewares/FreeRTOS/portable/MemMang/heap_4.c
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
+	Third_Parties/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+	Third_Parties/FreeRTOS/croutine.c \
+	Third_Parties/FreeRTOS/event_groups.c \
+	Third_Parties/FreeRTOS/list.c \
+	Third_Parties/FreeRTOS/queue.c \
+	Third_Parties/FreeRTOS/stream_buffer.c \
+	Third_Parties/FreeRTOS/tasks.c \
+	Third_Parties/FreeRTOS/timers.c \
+	Third_Parties/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
+	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
+	Middlewares/Display/mid_display.c \
+	Drivers/Display/ILI9341/ili9341.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -133,12 +133,15 @@ C_INCLUDES =  \
 	-ICore/Config \
 	-ICore/HAL \
 	-ICore/Interrupt \
-	-IDrivers/STM32F4xx_HAL_Driver/Inc \
-	-IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
-	-IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
-	-IDrivers/CMSIS/Include \
-	-IMiddlewares/FreeRTOS/include \
-	-IMiddlewares/FreeRTOS/portable/GCC/ARM_CM4F 
+	-IThird_Parties/STM32F4xx_HAL_Driver/Inc \
+	-IThird_Parties/STM32F4xx_HAL_Driver/Inc/Legacy \
+	-IThird_Parties/CMSIS/Device/ST/STM32F4xx/Include \
+	-IThird_Parties/CMSIS/Include \
+	-IThird_Parties/FreeRTOS/include \
+	-IThird_Parties/FreeRTOS/portable/GCC/ARM_CM4F \
+	-IMiddlewares/Display \
+	-IDrivers/Display \
+	-IDrivers/Display/ILI9341
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

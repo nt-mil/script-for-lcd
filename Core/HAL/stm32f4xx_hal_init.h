@@ -9,7 +9,7 @@
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define LD2_Pin GPIO_PIN_5
+#define LCD_BACKLIGHT_PIN GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
@@ -18,9 +18,16 @@
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 
+/* lcd pins */
+#define LCD_DC_PIN GPIO_PIN_2
+#define LCD_RESET_PIN GPIO_PIN_1
+#define LCD_CS_PIN GPIO_PIN_15
+#define LCD_GPIO_PORT GPIOB
+
 void Init_Peripherals(void);
 
 void GPIO_Init(void);
+void DMA_Init(void);
 void UART2_Init(void);
 void SPI2_Init(void);
 

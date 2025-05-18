@@ -383,8 +383,8 @@ HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi)
     hspi->MspInitCallback(hspi);
 #else
     /* Init the low level hardware : GPIO, CLOCK, NVIC... */
-    HAL_SPI_MspInit(hspi);
 #endif /* USE_HAL_SPI_REGISTER_CALLBACKS */
+    HAL_SPI_MspInit(hspi);
   }
 
   hspi->State = HAL_SPI_STATE_BUSY;

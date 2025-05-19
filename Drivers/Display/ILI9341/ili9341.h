@@ -13,8 +13,9 @@
 typedef enum {
     STATE_NONE = 0,
     STATE_HW_RESET,
-    STATE_SLEEP_OUT,
     STATE_INITAL_CMD,
+    STATE_SLEEP_OUT,
+    STATE_INIT_SCREEN,
     STATE_BACKLIGHT,
     STATE_COMPLETED,
 } initial_state_t;

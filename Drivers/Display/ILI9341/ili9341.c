@@ -40,27 +40,25 @@ static uint8_t frame_buffer[FB_SIZE];
 static uint16_t line_buffer[ACTUAL_BYTE_PER_ROW/2];
 
 static uint8_t init_cmds[] = {
-    0xEF, 3, 0x03, 0x80, 0x02,
-    0xCF, 3, 0x00, 0xC1, 0x30,
-    0xED, 4, 0x64, 0x03, 0x12, 0x81,
-    0xE8, 3, 0x85, 0x00, 0x78,
-    0xCB, 5, 0x39, 0x2C, 0x00, 0x34, 0x02,
-    0xF7, 1, 0x20,
-    0xEA, 2, 0x00, 0x00,
-    0xC0, 1, 0x23,             // Power control
-    0xC1, 1, 0x10,             // Power control
-    0xC5, 2, 0x3e, 0x28,       // VCM control
-    0xC7, 1, 0x86,             // VCM control2
-    0x36, 1, 0x48,             // Memory Access Control
-    0x3A, 1, 0x55,             // Pixel Format
-    0xB1, 2, 0x00, 0x18,       // Frame Rate
-    0xB6, 3, 0x08, 0x82, 0x27, // Display Function Control
-    0xF2, 1, 0x00,             // Enable 3G
-    0x26, 1, 0x01,             // Gamma Set
-    0xE0, 15, 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00,
-    0xE1, 15, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F,
-    0x11, 0, // Exit Sleep
-    0x29, 0  // Display ON
+    0x01, 0, // sw reset
+    0xCF, 3, 0x00, 0xD9, 0x30, // power control B
+    0xED, 4, 0x64, 0x03, 0x12, 0x81, // power on sequence
+    0xE8, 3, 0x85, 0x10, 0x7A, // driver timing control A
+    0xCB, 5, 0x29, 0x2C, 0x00, 0x34, 0x02, // power control A
+    0xF7, 1, 0x20,// pump ratio control
+    0xEA, 2, 0x00, 0x00, // driver timing control B
+    0xC0, 1, 0x1B, // Power Control 1
+    0xC1, 1, 0x12, // power control 2
+    0xC5, 2, 0x08, 0x26, // VCM control
+    0xC7, 1, 0xB7, // VCM control 2
+    0x36, 1, 0x48, // memory access control
+    0x3A, 1, 0x55, // Pixel Format
+    0xB1, 2, 0x00, 0x18, // Frame Rate Control (In Normal Mode)
+    0xB6, 3, 0x08, 0x82, 0x27, // display function control
+    0xF2, 1, 0x02, // disable 3Gamma]
+    0x26, 1, 0x01, // Gamma set
+    0xE0, 15, 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E, 0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00, // positive gamma correction
+    0xE1, 15, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F, // negative gamma correction
 };
 
 static uint16_t gray4_to_rgb565(uint8_t gray4)
@@ -244,21 +242,30 @@ void check_wait_init_timeout(TimerHandle_t timer)
         xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
         break;
 
-    case STATE_SLEEP_OUT:
+    case STATE_INITAL_CMD:
         if (check_init_timeout(RESET_PORT_DELAY))
         {
             xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
         }
         break;
 
-    case STATE_INITAL_CMD:
+    case STATE_SLEEP_OUT:
+        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+        break;
+    
+    case STATE_INIT_SCREEN:
         if (check_init_timeout(SLEEP_OUT_DELAY))
         {
             xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
         }
+        break; 
+
+    case STATE_BACKLIGHT:
+        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
         break;
 
     case STATE_COMPLETED:
+    case STATE_NONE:
         break;
     }
     init_timeout++;
@@ -272,34 +279,36 @@ static void process_lcd_init(void)
     {
     case STATE_HW_RESET:
         hw_reset();
-        init_state = STATE_SLEEP_OUT;
-        break;
-
-    case STATE_SLEEP_OUT:
-        if (check_init_timeout(RESET_PORT_DELAY))
-        {
-            ili9341_send_cmd(0x10); // sleep out
-            init_state = STATE_INITAL_CMD;
-        }
+        init_state = STATE_INITAL_CMD;
         break;
 
     case STATE_INITAL_CMD:
-        if (check_init_timeout(SLEEP_OUT_DELAY))
+        if (check_init_timeout(RESET_PORT_DELAY))
         {
             reset_sequence();
+            init_state = STATE_SLEEP_OUT;
+        }
+        break;
+
+    case STATE_SLEEP_OUT:
+        ili9341_send_cmd(0x11); // sleep out
+        init_state = STATE_INIT_SCREEN;
+        break;
+
+    case STATE_INIT_SCREEN:
+        if (check_init_timeout(SLEEP_OUT_DELAY))
+        {
             dma_ctrl.write_type = DMA_WRITE_TYPE_INIT_SCREEN;
-            dma_start_drawing_screen(); // write zero screen
+            dma_start_drawing_screen();
         }
         break;
 
     case STATE_BACKLIGHT:
-        if (check_init_timeout(BACKLIGTH_DELAY))
-        {
-            // set backlight
-            current_state = STATE_RUNNING;
-            init_state = STATE_COMPLETED;
-            xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
-        }
+        ili9341_send_cmd(0x29); // set backlight
+        current_state = STATE_RUNNING;
+        init_state = STATE_COMPLETED;
+        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+        break;
 
     case STATE_COMPLETED:
     case STATE_NONE:

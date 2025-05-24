@@ -96,6 +96,8 @@ static void send(data_type_t type, uint8_t *data, uint16_t len, bool use_dma)
 {
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_DC_PIN, (type == SEND_COMMAND) ? GPIO_PIN_RESET : GPIO_PIN_SET);
 
+    HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_RESET);
+
     if (use_dma)
     {
         HAL_SPI_Transmit_DMA(&hspi2, (uint8_t *)data, len);
@@ -124,8 +126,12 @@ static void set_ram_offset(void)
     ili9341_send_cmd(0x2A); // Column Address
     ili9341_send_data(&x[0], 4, false);
 
+    vTaskDelay(1);
+
     ili9341_send_cmd(0x2B); // Row Address
     ili9341_send_data(&y[0], 4, false);
+
+    vTaskDelay(1);
 
     ili9341_send_cmd(0x2C); // Write Memory
 }
@@ -141,9 +147,9 @@ static bool check_init_timeout(uint16_t timeout)
 
 static void hw_reset(void)
 {
-    // HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_SET);
-    // HAL_Delay(1);
-    // HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_RESET);
+    vTaskDelay(1);
+    HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_SET);
 }
 
 void reset_sequence(void)
@@ -155,13 +161,14 @@ void reset_sequence(void)
         uint8_t cmd = init_cmds[init_seq_index++];
         uint8_t len = init_cmds[init_seq_index++];
 
-        send(SEND_COMMAND, &cmd, 1, false);
+        send(SEND_COMMAND, &cmd, 1, true);
 
         if (len)
         {
-            send(SEND_DATA, &init_cmds[init_seq_index], len, false);
+            send(SEND_DATA, &init_cmds[init_seq_index], len, true);
             init_seq_index += len;
         }
+        vTaskDelay(1);
     }
 }
 
@@ -236,6 +243,7 @@ static void dma_draw_next_row(void)
 
 void check_wait_init_timeout(TimerHandle_t timer)
 {
+    printf("timer triggered!\n");
     switch (init_state)
     {
     case STATE_HW_RESET:
@@ -346,7 +354,7 @@ static void ili9341_init(void)
         init_dma_state();
         init_lcd_screen();
 
-        init_timer = xTimerCreate("CheckWaitInitTime", pdMS_TO_TICKS(100), pdTRUE, (void *)0, check_wait_init_timeout);
+        init_timer = xTimerCreate("CheckWaitInitTime", pdMS_TO_TICKS(1), pdTRUE, (void *)0, check_wait_init_timeout);
         if (init_timer != NULL)
         {
             xTimerStart(init_timer, 0);

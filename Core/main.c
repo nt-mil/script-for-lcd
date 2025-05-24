@@ -96,21 +96,18 @@ void SystemClock_Config(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(Idle_Task, "idle", 30, NULL, 20, NULL);
-    configASSERT(ret == pdPASS);
-
-    ret = xTaskCreate(display_task, "display", 300, NULL, 5, NULL);
+    BaseType_t ret = xTaskCreate(display_task, "display", 300, NULL, 5, NULL);
     configASSERT(ret == pdPASS);
 
     vTaskStartScheduler();
 }
 
-void Idle_Task(void *param)
+/**
+ * Idle task
+*/
+void vApplicationIdleHook(void)
 {
-    for (;;)
-    {
-        printf("idle task\n");
-    }
+    printf("idle task running!!!\n");
 }
 
 /**

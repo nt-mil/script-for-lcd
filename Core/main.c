@@ -15,7 +15,6 @@
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Task_Init(void);
-static void Idle_Task(void *param);
 
 /**
   * @brief  The application entry point.

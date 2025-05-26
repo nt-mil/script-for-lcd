@@ -17,10 +17,10 @@ static void event_init(void)
 void display_init(void)
 {
     const display_driver_t* display_driver;
-    display_driver = get_ili9341_display_driver();
+    display_driver = ili9341_get_driver();
 
     interface.display_driver = display_driver;
-    interface.update = ili9341_control;
+    interface.update = ili9341_controller_task;
 
     interface.display_driver->init();
     event_init();

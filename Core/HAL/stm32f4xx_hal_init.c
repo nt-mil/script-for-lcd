@@ -18,7 +18,7 @@ DMA_HandleTypeDef hdma_spi2_tx;
 /* Private function prototypes -----------------------------------------------*/
 
 /* External functions --------------------------------------------------------*/
-extern void dma_callback(void);
+extern void ili9341_dma_complete(void);
 /***********************************************************
  * Initialize HAL
  ***********************************************************/
@@ -258,7 +258,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if (hspi->Instance == SPI2) 
     {
-        dma_callback();
+        ili9341_dma_complete();
         // HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_SET); // release CS
     }
 }

@@ -5,8 +5,8 @@ extern SPI_HandleTypeDef hspi2;
 extern EventGroupHandle_t display_event;
 
 // Timing constants (in milliseconds)
-#define ILI9341_DMA_TIMEOUT_COUNT   (10)
-#define ILI9341_RESET_DELAY_MS      (5)
+#define ILI9341_DMA_TIMEOUT_COUNT   (100)
+#define ILI9341_RESET_DELAY_MS      (1)
 #define ILI9341_SLEEP_OUT_DELAY_MS  (120)
 #define ILI9341_BACKLIGHT_DELAY_MS  (13)
 
@@ -27,6 +27,7 @@ typedef struct
     dma_write_type_t write_type; // Type of DMA operation
     bool is_row_completed; // Flag for row completion
     bool is_writing; // Flag for active DMA transfer
+    bool multiple_byte;
 } dma_control_t;
 
 // Static variables
@@ -53,7 +54,7 @@ static uint8_t init_commands[] = {
     0xC1, 1, 0x12, // power control 2
     0xC5, 2, 0x08, 0x26, // VCM control
     0xC7, 1, 0xB7, // VCM control 2
-    0x36, 1, 0x48, // memory access control
+    0x36, 1, 0x28, // memory access control
     0x3A, 1, 0x55, // Pixel Format
     0xB1, 2, 0x00, 0x18, // Frame Rate Control (In Normal Mode)
     0xB6, 3, 0x08, 0x82, 0x27, // display function control
@@ -93,15 +94,25 @@ static HAL_StatusTypeDef send_data(ili9341_data_type_t type, uint8_t *data, uint
 
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_RESET);
     
-    HAL_StatusTypeDef status = use_dma ?
-        HAL_SPI_Transmit_DMA(&hspi2, data, len) :
-        HAL_SPI_Transmit_IT(&hspi2, data, len);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit_DMA(&hspi2, data, len);
+
+    dma_control.multiple_byte = use_dma;
     
     if (status != HAL_OK) {
         // Log error (assuming a logging mechanism)
     }
     return status;
 
+}
+
+void ILI9341_Write_Command(uint8_t cmd)
+{
+    send_data(ILI9341_DATA_COMMAND, &cmd, 1, false);
+}
+
+void ILI9341_Write_Data(uint8_t data)
+{
+    send_data(ILI9341_DATA_PAYLOAD, &data, 1, false);
 }
 
 // Send a single command
@@ -116,8 +127,11 @@ static HAL_StatusTypeDef send_payload(uint8_t *data, uint16_t len, bool use_dma)
 
 // Set display RAM address window
 static void set_memory_window(void) {
-    uint8_t column_addr[4] = {0x00, 0x00, 0x01, 0x3F}; // 0 to 319
-    uint8_t row_addr[4] = {0x00, 0x00, 0x00, 0xEF};    // 0 to 239
+    uint16_t x0 = 0, x1 = 319;
+    uint16_t y0 = 0, y1 = 239;
+
+    uint8_t column_addr[4] = {x0 >> 8, x0 & 0xFF, x1 >> 8, x1 & 0xFF}; // 0 to 319
+    uint8_t row_addr[4] = {y0 >> 8, y0 & 0xFF, y1 >> 8, y1 & 0xFF};    // 0 to 239
     
     send_command(0x2A); // Column Address Set
     send_payload(column_addr, 4, false);
@@ -132,12 +146,16 @@ static void set_memory_window(void) {
 static void hw_reset(void)
 {
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_RESET);
-    vTaskDelay(1);
+    for(int i = 0; i < 10000; i++)
+    {
+
+    }
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_SET);
 }
 
 // Execute initialization command sequence
 static void execute_init_sequence(void) {
+#if 1
     init_sequence_index = 0;
     while (init_sequence_index < sizeof(init_commands)) {
         uint8_t cmd = init_commands[init_sequence_index++];
@@ -148,7 +166,135 @@ static void execute_init_sequence(void) {
             send_payload(&init_commands[init_sequence_index], len, false);
             init_sequence_index += len;
         }
+        // vTaskDelay(5);
     }
+#else
+    ILI9341_Write_Command(0x01);
+    HAL_Delay(100);
+
+    //POWER CONTROL A
+    ILI9341_Write_Command(0xCB);
+    ILI9341_Write_Data(0x39);
+    ILI9341_Write_Data(0x2C);
+    ILI9341_Write_Data(0x00);
+    ILI9341_Write_Data(0x34);
+    ILI9341_Write_Data(0x02);
+
+    //POWER CONTROL B
+    ILI9341_Write_Command(0xCF);
+    ILI9341_Write_Data(0x00);
+    ILI9341_Write_Data(0xC1);
+    ILI9341_Write_Data(0x30);
+
+    //DRIVER TIMING CONTROL A
+    ILI9341_Write_Command(0xE8);
+    ILI9341_Write_Data(0x85);
+    ILI9341_Write_Data(0x00);
+    ILI9341_Write_Data(0x78);
+
+    //DRIVER TIMING CONTROL B
+    ILI9341_Write_Command(0xEA);
+    ILI9341_Write_Data(0x00);
+    ILI9341_Write_Data(0x00);
+
+    //POWER ON SEQUENCE CONTROL
+    ILI9341_Write_Command(0xED);
+    ILI9341_Write_Data(0x64);
+    ILI9341_Write_Data(0x03);
+    ILI9341_Write_Data(0x12);
+    ILI9341_Write_Data(0x81);
+
+    //PUMP RATIO CONTROL
+    ILI9341_Write_Command(0xF7);
+    ILI9341_Write_Data(0x20);
+
+    //POWER CONTROL,VRH[5:0]
+    ILI9341_Write_Command(0xC0);
+    ILI9341_Write_Data(0x23);
+
+    //POWER CONTROL,SAP[2:0];BT[3:0]
+    ILI9341_Write_Command(0xC1);
+    ILI9341_Write_Data(0x10);
+
+    //VCM CONTROL
+    ILI9341_Write_Command(0xC5);
+    ILI9341_Write_Data(0x3E);
+    ILI9341_Write_Data(0x28);
+
+    //VCM CONTROL 2
+    ILI9341_Write_Command(0xC7);
+    ILI9341_Write_Data(0x86);
+
+    //MEMORY ACCESS CONTROL
+    ILI9341_Write_Command(0x36);
+    ILI9341_Write_Data(0x28);
+
+    //PIXEL FORMAT
+    ILI9341_Write_Command(0x3A);
+    ILI9341_Write_Data(0x55);
+
+    //FRAME RATIO CONTROL, STANDARD RGB COLOR
+    ILI9341_Write_Command(0xB1);
+    ILI9341_Write_Data(0x00);
+    ILI9341_Write_Data(0x18);
+
+    //DISPLAY FUNCTION CONTROL
+    ILI9341_Write_Command(0xB6);
+    ILI9341_Write_Data(0x08);
+    ILI9341_Write_Data(0x82);
+    ILI9341_Write_Data(0x27);
+
+    //3GAMMA FUNCTION DISABLE
+    ILI9341_Write_Command(0xF2);
+    ILI9341_Write_Data(0x00);
+
+    //GAMMA CURVE SELECTED
+    ILI9341_Write_Command(0x26);
+    ILI9341_Write_Data(0x01);
+
+    //POSITIVE GAMMA CORRECTION
+    ILI9341_Write_Command(0xE0);
+    ILI9341_Write_Data(0x0F);
+    ILI9341_Write_Data(0x31);
+    ILI9341_Write_Data(0x2B);
+    ILI9341_Write_Data(0x0C);
+    ILI9341_Write_Data(0x0E);
+    ILI9341_Write_Data(0x08);
+    ILI9341_Write_Data(0x4E);
+    ILI9341_Write_Data(0xF1);
+    ILI9341_Write_Data(0x37);
+    ILI9341_Write_Data(0x07);
+    ILI9341_Write_Data(0x10);
+    ILI9341_Write_Data(0x03);
+    ILI9341_Write_Data(0x0E);
+    ILI9341_Write_Data(0x09);
+    ILI9341_Write_Data(0x00);
+
+    //NEGATIVE GAMMA CORRECTION
+    ILI9341_Write_Command(0xE1);
+    ILI9341_Write_Data(0x00);
+    ILI9341_Write_Data(0x0E);
+    ILI9341_Write_Data(0x14);
+    ILI9341_Write_Data(0x03);
+    ILI9341_Write_Data(0x11);
+    ILI9341_Write_Data(0x07);
+    ILI9341_Write_Data(0x31);
+    ILI9341_Write_Data(0xC1);
+    ILI9341_Write_Data(0x48);
+    ILI9341_Write_Data(0x08);
+    ILI9341_Write_Data(0x0F);
+    ILI9341_Write_Data(0x0C);
+    ILI9341_Write_Data(0x31);
+    ILI9341_Write_Data(0x36);
+    ILI9341_Write_Data(0x0F);
+
+    //EXIT SLEEP
+    ILI9341_Write_Command(0x11);
+    HAL_Delay(120);
+
+    //TURN ON DISPLAY
+    ILI9341_Write_Command(0x29);
+#endif
 }
 
 // Initialize DMA control structure
@@ -180,9 +326,9 @@ static void start_screen_draw(void) {
     if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
         convert_row_to_rgb565();
     } else {
-        memset(line_buffer, 0, sizeof(line_buffer));
+        memset(line_buffer, 0x0F, sizeof(line_buffer));
     }
-    
+
     send_payload((uint8_t*)line_buffer, sizeof(line_buffer), true);
     dma_control.is_writing = true;
     dma_control.current_row = 1;
@@ -203,7 +349,7 @@ static void draw_next_row(void) {
     if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
         convert_row_to_rgb565();
     } else {
-        memset(line_buffer, 0, sizeof(line_buffer));
+        memset(line_buffer, 0x0F, sizeof(line_buffer));
     }
     
     send_payload((uint8_t*)line_buffer, sizeof(line_buffer), true);
@@ -286,6 +432,7 @@ static void process_initialization(void)
         break;
 
     case ILI9341_INIT_BACKLIGHT:
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_SET);
         send_command(0x29); // set backlight
         current_state = ILI9341_STATE_RUNNING;
         init_state = ILI9341_INIT_COMPLETED;
@@ -322,7 +469,7 @@ static void ili9341_driver_init(void) {
     
     TimerHandle_t init_timer = xTimerCreate(
         "ILI9341InitTimer",
-        pdMS_TO_TICKS(100),
+        pdMS_TO_TICKS(1),
         pdTRUE,
         NULL,
         init_timeout_callback
@@ -396,12 +543,24 @@ static uint8_t *get_framebuffer(void) {
 void ili9341_dma_complete(void) {
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_SET);
     dma_control.is_row_completed = true;
-    xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+    if (dma_control.multiple_byte)
+    {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        xEventGroupSetBitsFromISR(display_event, DISPLAY_EVENT_UPDATE, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
 }
+
+// static void test_display(void)
+// {
+//     hw_reset();
+//     execute_init_sequence();
+// }
 
 // Display driver structure
 static const display_driver_t ili9341_driver = {
     .init = ili9341_driver_init,
+    // .update = test_display,
     .get_framebuffer = get_framebuffer
 };
 

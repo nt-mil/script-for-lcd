@@ -128,13 +128,15 @@ void SystemClock_Config(void)
   }
 }
 
+#define ROWS_PER_BAND 20
 // Load checkerboard pattern into framebuffer for all 240 rows
 void load_test_checkerboard(uint8_t *framebuffer) {
+    uint16_t row;
     if (framebuffer == NULL) return;
 
     // Copy alternating row patterns to create checkerboard effect
-    for (uint16_t row = 0; row < ILI9341_HEIGHT; row++) {
-        const uint8_t *row_pattern = (row % 6 == 0) ? 
+    for (row = 0; row < ILI9341_HEIGHT; row++) {
+        const uint8_t *row_pattern = ((row / ROWS_PER_BAND) % 2 == 0) ? 
             test_row_checkerboard_black : test_row_checkerboard_white;
         memcpy(&framebuffer[row * ILI9341_BYTES_PER_ROW], row_pattern, ILI9341_BYTES_PER_ROW);
     }

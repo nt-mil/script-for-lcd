@@ -32,6 +32,8 @@ typedef struct
 
 // Static variables
 
+static SemaphoreHandle_t dma_semaphore = NULL;
+
 static dma_control_t dma_control = {0};
 static ili9341_init_state_t init_state = ILI9341_INIT_NONE;
 static ili9341_operation_state_t current_state = ILI9341_STATE_READY;
@@ -64,6 +66,28 @@ static uint8_t init_commands[] = {
     0xE1, 15, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31, 0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F, // negative gamma correction
 };
 
+// Initialize DMA control structure
+static void reset_dma_control(void) {
+    dma_control.current_row = 0;
+    dma_control.wait_count = 0;
+    dma_control.write_type = DMA_WRITE_NONE;
+    dma_control.is_writing = false;
+    dma_control.is_row_completed = false;
+}
+
+// Initialize LCD controller state
+static void reset_lcd_controller(void) {
+    // Reset operational and initialization states to their initial values
+    current_state = ILI9341_STATE_READY;
+    init_state = ILI9341_INIT_NONE;
+    target_state = ILI9341_STATE_READY;
+    init_timeout_ms = 0;
+    init_sequence_index = 0;
+    reset_dma_control();
+    // Clear framebuffer to prevent stale data
+    memset(framebuffer, 0, ILI9341_FRAMEBUFFER_SIZE);
+}
+
 // Convert 4-bit grayscale to RGB565
 static uint16_t grayscale_to_rgb565(uint8_t gray4) {
     uint8_t r = (gray4 * 31) / 15;
@@ -93,11 +117,11 @@ static HAL_StatusTypeDef send_data(ili9341_data_type_t type, uint8_t *data, uint
                      (type == ILI9341_DATA_COMMAND) ? GPIO_PIN_RESET : GPIO_PIN_SET);
 
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN, GPIO_PIN_RESET);
-    
+
     HAL_StatusTypeDef status = HAL_SPI_Transmit_DMA(&hspi2, data, len);
 
     dma_control.multiple_byte = use_dma;
-    
+
     if (status != HAL_OK) {
         // Log error (assuming a logging mechanism)
     }
@@ -122,7 +146,14 @@ static HAL_StatusTypeDef send_command(uint8_t cmd) {
 
 // Send data payload
 static HAL_StatusTypeDef send_payload(uint8_t *data, uint16_t len, bool use_dma) {
-    return send_data(ILI9341_DATA_PAYLOAD, data, len, use_dma);
+    HAL_StatusTypeDef status = send_data(ILI9341_DATA_PAYLOAD, data, len, use_dma);
+
+    if (status != HAL_OK) {
+        reset_dma_control();
+        xSemaphoreGive(dma_semaphore);
+    }
+
+    return status;
 }
 
 // Set display RAM address window
@@ -143,8 +174,7 @@ static void set_memory_window(void) {
 }
 
 // Perform hardware reset
-static void hw_reset(void)
-{
+static void hw_reset(void) {
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_RESET_PIN, GPIO_PIN_RESET);
     for(int i = 0; i < 10000; i++)
     {
@@ -160,13 +190,12 @@ static void execute_init_sequence(void) {
     while (init_sequence_index < sizeof(init_commands)) {
         uint8_t cmd = init_commands[init_sequence_index++];
         uint8_t len = init_commands[init_sequence_index++];
-        
+
         send_command(cmd);
         if (len > 0) {
             send_payload(&init_commands[init_sequence_index], len, false);
             init_sequence_index += len;
         }
-        // vTaskDelay(5);
     }
 #else
     ILI9341_Write_Command(0x01);
@@ -297,46 +326,27 @@ static void execute_init_sequence(void) {
 #endif
 }
 
-// Initialize DMA control structure
-static void reset_dma_control(void) {
-    dma_control.current_row = 0;
-    dma_control.wait_count = 0;
-    dma_control.write_type = DMA_WRITE_NONE;
-    dma_control.is_writing = false;
-    dma_control.is_row_completed = false;
-}
-
-// Initialize LCD controller state
-static void reset_lcd_controller(void) {
-    // Reset operational and initialization states to their initial values
-    current_state = ILI9341_STATE_READY;
-    init_state = ILI9341_INIT_NONE;
-    target_state = ILI9341_STATE_READY;
-    init_timeout_ms = 0;
-    init_sequence_index = 0;
-    reset_dma_control();
-    // Clear framebuffer to prevent stale data
-    memset(framebuffer, 0, ILI9341_FRAMEBUFFER_SIZE);
-}
-
 // Start drawing a screen (initial, clear, or framebuffer)
 static void start_screen_draw(void) {
-    set_memory_window();
-    
-    if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
-        convert_row_to_rgb565();
-    } else {
-        memset(line_buffer, 0x0F, sizeof(line_buffer));
-    }
+    if (xSemaphoreTake(dma_semaphore, portMAX_DELAY) == pdTRUE) {
+        set_memory_window();
+        
+        if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
+            convert_row_to_rgb565();
+        } else {
+            memset(line_buffer, 0x0F, sizeof(line_buffer));
+        }
 
-    send_payload((uint8_t*)line_buffer, sizeof(line_buffer), true);
-    dma_control.is_writing = true;
-    dma_control.current_row = 1;
+        send_payload((uint8_t*)line_buffer, sizeof(line_buffer), true);
+        dma_control.is_writing = true;
+        dma_control.current_row = 1;
+    }
 }
 
 // Draw the next row
 static void draw_next_row(void) {
     if (dma_control.current_row >= ILI9341_HEIGHT) {
+        xSemaphoreGive(dma_semaphore);
         if (dma_control.write_type == DMA_WRITE_INIT_SCREEN) {
             init_state = ILI9341_INIT_BACKLIGHT;
         } else if (dma_control.write_type == DMA_WRITE_CLEAR_SCREEN) {
@@ -364,8 +374,7 @@ static bool has_timeout_expired(uint16_t timeout_ms) {
 
 // Timer callback for initialization timeouts
 void init_timeout_callback(TimerHandle_t timer) {
-    switch (init_state)
-    {
+    switch (init_state) {
     case ILI9341_INIT_HW_RESET:
         xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
         break;
@@ -400,8 +409,7 @@ void init_timeout_callback(TimerHandle_t timer) {
 }
 
 // Process initialization state machine
-static void process_initialization(void)
-{
+static void process_initialization(void) {
     ili9341_init_state_t prev_state = init_state;
 
     switch (init_state) {
@@ -479,6 +487,11 @@ static void ili9341_driver_init(void) {
         xTimerStart(init_timer, 0);
     } else {
         // Log timer creation failure
+    }
+
+    dma_semaphore = xSemaphoreCreateBinary();
+    if (dma_semaphore) {
+        xSemaphoreGive(dma_semaphore);
     }
     
     is_initialized = true;

@@ -19,6 +19,7 @@ extern "C" {
 #include "FreeRTOS.h"
 #include "task.h"
 #include "timers.h"
+#include "semphr.h"
 #include "event_groups.h"
 
 // driver headers

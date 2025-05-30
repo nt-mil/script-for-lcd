@@ -65,7 +65,7 @@ void GPIO_Init(void)
 	HAL_GPIO_Init(LCD_GPIO_PORT, &GPIO_InitStruct);
 
     /*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_RESET); // backlight off
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_SET); // backlight off
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_CS_PIN | LCD_RESET_PIN, GPIO_PIN_SET); // active low
     HAL_GPIO_WritePin(LCD_GPIO_PORT, LCD_DC_PIN, GPIO_PIN_RESET); // cmd mode by default
 }
@@ -81,7 +81,7 @@ void DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 10, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 
 }

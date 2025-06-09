@@ -1,0 +1,41 @@
+# Layout TML v1.0
+# Author: Trieu
+# Description: Main layout for T-World
+
+Root {
+    id: main
+    width: 320
+    height: 240
+
+    Layout {
+        id: welcome
+        Area {
+            font: 60x60
+            text: "Welcome to T-World"
+            align: center
+        }
+    }
+
+    Layout {
+        id: clock_and_date
+        Area {
+            x: 0
+            y: 90
+            width: 320
+            height: 60
+            font: 60x60
+            text: "$hour:$min:$sec
+            align: center
+        }
+        Area {
+            x: 0
+            y: 50
+            with: 320
+            height: 40
+            font: 40x40
+            text: "$month $day"
+            align: center
+        }
+
+    }
+}

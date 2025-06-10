@@ -26,7 +26,7 @@ Root {
             height: 60
             text: "$hour:$min:$sec
             font: 60x60
-            color: "write"
+            color: "white"
             align: center
         }
         Area {

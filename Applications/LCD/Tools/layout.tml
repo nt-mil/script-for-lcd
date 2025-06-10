@@ -6,6 +6,7 @@ Root {
     id: main
     width: 320
     height: 240
+    background: "black"
 
     Layout {
         id: welcome
@@ -23,8 +24,9 @@ Root {
             y: 90
             width: 320
             height: 60
-            font: 60x60
             text: "$hour:$min:$sec
+            font: 60x60
+            color: "write"
             align: center
         }
         Area {

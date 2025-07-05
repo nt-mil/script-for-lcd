@@ -3,41 +3,74 @@
 # Description: Main layout for T-World
 
 Root {
-    id: main
-    width: 320
-    height: 240
-    background: "black"
+	id: main
+	x: 0
+	y: 0
+	width: 320
+	height: 240
+	color: "white"
+	background: "black"
 
-    Layout {
-        id: welcome
-        Area {
-            font: 60x60
-            text: "Welcome to T-World"
-            align: center
-        }
-    }
+	Layout {
+		id: welcome
+		Area {
+			Text {
+				font: 60x60
+				text: "Welcome to T-World"
+				align: center
+			}
+		}
+	}
 
-    Layout {
-        id: clock_and_date
-        Area {
-            x: 0
-            y: 90
-            width: 320
-            height: 60
-            text: "$hour:$min:$sec
-            font: 60x60
-            color: "white"
-            align: center
-        }
-        Area {
-            x: 0
-            y: 50
-            with: 320
-            height: 40
-            font: 40x40
-            text: "$month $day"
-            align: center
-        }
+	Layout {
+		id: clock_and_date
+		Area {
+			x: 0
+			y: 90
+			width: 320
+			height: 60
+			Text {
+				text: "$hour:$min:$sec
+				font: 60x60
+				color: "white"
+				align: center
+			}
+		}
+		Area {
+			x: 0
+			y: 50
+			with: 320
+			height: 40
+			Text {
+				font: 40x40
+				text: "$month $day"
+				align: center
+			}
+		}
+	}
 
-    }
+	Layout {
+		id: setting
+		Area {
+			x: 0
+			y: 0
+			width: 320
+			height: 30
+			NaviBar {
+				total: $total
+				current: #current
+			}
+		}
+		Area {
+			x: 150
+			y:200
+			width: 320
+			height: 40
+			Text {
+				text: $option
+				font: Font_11x18
+				align: center
+			}
+		}
+	}
 }

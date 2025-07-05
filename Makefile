@@ -77,6 +77,8 @@ startup_stm32f401xe.s
 # ASM sources
 ASMM_SOURCES = 
 
+#Layout Info.o
+LAYOUT_OBJ := $(abspath Applications/LCD/Tools/layout.o)
 
 #######################################
 # binaries
@@ -183,6 +185,9 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMM_SOURCES:.S=.o)))
 vpath %.S $(sort $(dir $(ASMM_SOURCES)))
+OBJECTS += $(LAYOUT_OBJ)
+
+CLEAN_OBJS := $(filter-out $(LAYOUT_OBJ), $(OBJECTS))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
@@ -209,7 +214,7 @@ $(BUILD_DIR):
 # clean up
 #######################################
 clean:
-	-rm -fR $(BUILD_DIR)
+	-rm -fR $(BUILD_DIR) $(CLEAN_OBJS)
   
 #######################################
 # dependencies

@@ -10,6 +10,6 @@ typedef struct {
 
 void initialize_databank(void);
 uint16_t write_to_databank(void* device_info);
-bool read_from_databank(uint16_t index);
+display_info_t* read_from_databank(uint16_t index);
 
 #endif /* _DATABANK_H_ */

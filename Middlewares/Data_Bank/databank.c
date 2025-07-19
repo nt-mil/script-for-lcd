@@ -31,9 +31,9 @@ uint16_t write_to_databank(void* device_info) {
     return index;
 }
 
-bool read_from_databank(uint16_t index) {
+display_info_t* read_from_databank(uint16_t index) {
     if (index >= device_databank.entry_count || index >= MAX_DEVICE_COUNT) {
         return false; // Invalid index
     }
-    return device_databank.data_entries[index].info != NULL;
+    return device_databank.data_entries[index].info;
 }

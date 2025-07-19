@@ -3,13 +3,11 @@
 #include "ili9341.h"
 #include <string.h>
 
-// FreeRTOS event group for display events
 EventGroupHandle_t display_event;
 
-// Static display interface instance
+static uint16_t databank_index = 0xFFFE;
 static display_interface_t display_interface;
 
-// Initialize FreeRTOS event group for display events
 static void init_event_group(void) {
     display_event = xEventGroupCreate();
     if (display_event == NULL) {
@@ -18,7 +16,10 @@ static void init_event_group(void) {
     }
 }
 
-// Initialize the display interface
+static void register_display_info(display_info_t* info) {
+    databank_index = write_to_databank((void*)info);
+}
+
 void display_init(void) {
     // Get ILI9341 driver
     const display_driver_t* driver = ili9341_get_driver();
@@ -27,18 +28,18 @@ void display_init(void) {
         return;
     }
 
-    // Configure display interface
     display_interface.driver = driver;
     display_interface.update = ili9341_controller_task;
 
-    // Initialize the driver
     if (display_interface.driver->init) {
         display_interface.driver->init();
     } else {
         // Log error: driver init function missing
     }
 
-    // Initialize event group
+    display_info_t* display_info = driver->get_framebuffer();
+    register_display_info(display_info);
+
     init_event_group();
 
     // Trigger initial display update
@@ -69,4 +70,8 @@ void display_task(void *param) {
             }
         }
     }
+}
+
+uint16_t get_display_data_bank_index(void) {
+    return databank_index;
 }

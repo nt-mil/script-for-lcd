@@ -27,6 +27,7 @@ extern "C" {
 
 // middleware headers
 #include "mid_display.h"
+#include "databank.h"
 
 
 void Error_Handler(void);

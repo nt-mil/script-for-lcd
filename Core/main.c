@@ -144,9 +144,13 @@ void load_test_checkerboard(uint8_t *framebuffer) {
 
 void test_display(void)
 {
+    uint16_t index = get_display_data_bank_index();
+
+    display_info_t* display_info = (display_info_t*)read_from_databank(index);
+
     // Get framebuffer
-    uint8_t *framebuffer = ili9341_get_driver()->get_framebuffer();
-    if (framebuffer == NULL) {
+    // display_info_t* framebuffer = ili9341_get_driver()->get_framebuffer();
+    if (display_info == NULL) {
         // Log error (e.g., via UART)
         return;
     }
@@ -155,7 +159,7 @@ void test_display(void)
 
     // HAL_GPIO_WritePin(LD2_GPIO_Port, LCD_BACKLIGHT_PIN, GPIO_PIN_SET);
     // Load checkerboard pattern into framebuffer
-    load_test_checkerboard(framebuffer);
+    load_test_checkerboard(display_info->data);
 
     // for (int i = 0; i <ILI9341_HEIGHT; i++)
     // {

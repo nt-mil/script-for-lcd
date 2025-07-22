@@ -49,6 +49,8 @@ int main(void)
 
     test_display();
 
+    process_layout_script();
+
     Task_Init();
 
     while(1)

@@ -69,7 +69,10 @@ C_SOURCES =  \
 	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
 	Middlewares/Display/mid_display.c \
 	Middlewares/Data_Bank/databank.c \
-	Drivers/Display/ILI9341/ili9341.c
+	Drivers/Display/ILI9341/ili9341.c \
+	Applications/LCD/layout_parser.c \
+	Applications/LCD/layout_renderer.c \
+	Applications/LCD/layout_control.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -145,7 +148,8 @@ C_INCLUDES =  \
 	-IMiddlewares/Display \
 	-IMiddlewares/Data_Bank \
 	-IDrivers/Display \
-	-IDrivers/Display/ILI9341
+	-IDrivers/Display/ILI9341 \
+	-IApplications/LCD
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

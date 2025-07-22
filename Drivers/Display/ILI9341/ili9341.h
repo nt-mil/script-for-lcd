@@ -6,10 +6,10 @@
 // Display dimensions and buffer configuration
 #define ILI9341_WIDTH                   320
 #define ILI9341_HEIGHT                  240
-#define ILI9341_BITS_PER_PIXEL          4
+#define ILI9341_BITS_PER_PIXEL          1
 #define ILI9341_FRAMEBUFFER_SIZE        (ILI9341_WIDTH * ILI9341_HEIGHT * ILI9341_BITS_PER_PIXEL / 8)
 #define ILI9341_BYTES_PER_ROW           (ILI9341_WIDTH * ILI9341_BITS_PER_PIXEL /8)
-#define ILI9341_ACTUAL_BYTES_PER_ROW    (ILI9341_WIDTH * 2)
+#define ILI9341_LINE_BUFFER_SIZE        (ILI9341_WIDTH * 2)
 
 // Initialization states for display setup
 typedef enum {

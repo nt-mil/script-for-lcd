@@ -10,6 +10,13 @@ extern EventGroupHandle_t display_event;
 #define ILI9341_SLEEP_OUT_DELAY_MS  (120)
 #define ILI9341_BACKLIGHT_DELAY_MS  (13)
 
+#define CURRENT_RENDER_BUFFER  (line_buffer[active_buf_idx])
+#define CURRENT_DMA_BUFFER     (line_buffer[1 - active_buf_idx])
+
+#define SWAP_BUFFERS() do { active_buf_idx = 1 - active_buf_idx; } while (0)
+#define DRAW_CLEAR_SCREEN()     {draw_screen(CURRENT_RENDER_BUFFER, DMA_WRITE_CLEAR_SCREEN);}
+#define DRAW_FRAME_BUFFER()     {draw_screen(CURRENT_RENDER_BUFFER, DMA_WRITE_FRAMEBUFFER);}
+
 // DMA write operation types
 typedef enum
 {
@@ -41,8 +48,13 @@ static ili9341_operation_state_t target_state = ILI9341_STATE_READY;
 static uint16_t init_timeout_ms = 0;
 static uint8_t init_sequence_index = 0;
 static uint8_t framebuffer[ILI9341_FRAMEBUFFER_SIZE];
-static uint16_t line_buffer[ILI9341_WIDTH];
+static uint16_t line_buffer[2][ILI9341_WIDTH];
+static uint8_t active_buf_idx = 0; // 0 or 1
 static display_info_t display_info;
+
+// Color info
+static uint16_t fg = 0xd68a;
+static uint16_t bg = 0x25ae;
 
 // Initialization command sequence
 static uint8_t init_commands[] = {
@@ -89,26 +101,73 @@ static void reset_lcd_controller(void) {
     memset(framebuffer, 0, ILI9341_FRAMEBUFFER_SIZE);
 }
 
-// Convert 4-bit grayscale to RGB565
-static uint16_t grayscale_to_rgb565(uint8_t gray4) {
-    uint8_t r = (gray4 * 31) / 15;
-    uint8_t g = (gray4 * 61) / 15;
-    uint8_t b = (gray4 * 31) / 15;
-
-    return (r << 11) | (g << 5) | b;
+// Convert 16-bit value to RGB565
+static uint16_t swap_byte(uint16_t value) {
+    return (value >> 8) | (value << 8);
 }
 
-// Convert a row of 4-bit grayscale to RGB565
-static void convert_row_to_rgb565(void) {
-    for (uint16_t i = 0; i < ILI9341_BYTES_PER_ROW; i++) {
-        uint16_t fb_index = dma_control.current_row * ILI9341_BYTES_PER_ROW + i;
-        uint8_t byte = framebuffer[fb_index];
-        uint8_t gray1 = byte >> 4;
-        uint8_t gray2 = byte & 0x0F;
-        line_buffer[i * 2] = grayscale_to_rgb565(gray1);
-        line_buffer[i * 2 + 1] = grayscale_to_rgb565(gray2);
+static inline uint16_t get_pixel_color(uint8_t byte, uint8_t bit_pos) {
+    return (byte & (1 << bit_pos)) ? swap_byte(fg) : swap_byte(bg);
+}
+
+// Draw zero screen
+static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
+    uint16_t row_offset = dma_control.current_row * ILI9341_BYTES_PER_ROW;
+
+    if (row_offset >= ILI9341_FRAMEBUFFER_SIZE - ILI9341_BYTES_PER_ROW) {
+        return; // Prevent buffer overflow
+    }
+
+    uint16_t send_index = 0;
+    for (uint16_t byte_idx = 0; byte_idx < ILI9341_BYTES_PER_ROW; ++byte_idx) {
+        if (write_type == DMA_WRITE_CLEAR_SCREEN) {
+            buffer[send_index++] = 0x0000;
+        } else {
+            uint8_t byte = framebuffer[row_offset + byte_idx];
+
+            for (int bit = 7; bit >= 0; --bit) {
+                buffer[send_index++] = get_pixel_color(byte, bit);
+            }
+        }
     }
 }
+
+#if 0
+// Convert a row of 1-bit framebuffer data to RGB565 color format
+static void convert_row_to_rgb565(uint16_t* buffer) {
+    uint16_t row_offset = dma_control.current_row * ILI9341_BYTES_PER_ROW;
+
+    if (row_offset >= ILI9341_FRAMEBUFFER_SIZE - ILI9341_BYTES_PER_ROW) {
+        return; // Prevent buffer overflow
+    }
+
+    uint16_t send_index = 0;
+#if 1
+    uint16_t _fg = swap_byte(fg);
+    uint16_t _bg = swap_byte(bg);
+#endif
+
+    for (uint16_t byte_idx = 0; byte_idx < ILI9341_BYTES_PER_ROW; ++byte_idx) {
+        uint8_t byte = framebuffer[row_offset + byte_idx];
+#if 1
+        uint16_t color = fg; /// default
+        for (uint8_t bit_idx = 0; bit_idx < 8; bit_idx++) {
+            color = ((byte << bit_idx)  & 0x80)? _fg : _bg;
+            buffer[send_index++] = color;
+        }
+#else
+        // buffer[send_index++] = (byte & 0x80) ? swap_byte(fg) : swap_byte(bg); // Bit 7
+        // buffer[send_index++] = (byte & 0x40) ? swap_byte(fg) : swap_byte(bg); // Bit 6
+        // buffer[send_index++] = (byte & 0x20) ? swap_byte(fg) : swap_byte(bg); // Bit 5
+        // buffer[send_index++] = (byte & 0x10) ? swap_byte(fg) : swap_byte(bg); // Bit 4
+        // buffer[send_index++] = (byte & 0x08) ? swap_byte(fg) : swap_byte(bg); // Bit 3
+        // buffer[send_index++] = (byte & 0x04) ? swap_byte(fg) : swap_byte(bg); // Bit 2
+        // buffer[send_index++] = (byte & 0x02) ? swap_byte(fg) : swap_byte(bg); // Bit 1
+        // buffer[send_index++] = (byte & 0x01) ? swap_byte(fg) : swap_byte(bg); // Bit 0
+#endif
+    }
+}
+#endif
 
 // Send data over SPI
 static HAL_StatusTypeDef send_data(ili9341_data_type_t type, uint8_t *data, uint16_t len, bool use_dma) {
@@ -333,14 +392,21 @@ static void start_screen_draw(void) {
         set_memory_window();
         
         if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
-            convert_row_to_rgb565();
+            // convert_row_to_rgb565(CURRENT_RENDER_BUFFER);
+            DRAW_FRAME_BUFFER();
         } else {
-            memset(line_buffer, 0x0F, sizeof(line_buffer));
+            uint16_t* buf = (uint16_t*)line_buffer;
+            for (int i = 0; i < ILI9341_WIDTH; i++) { // 320 pixels
+                buf[i] = 0x0000; // Fill with 0x00 as 16-bit words
+            }
         }
 
-        send_payload((uint8_t*)line_buffer, sizeof(line_buffer), true);
+        SWAP_BUFFERS();
+        send_payload((uint8_t*)CURRENT_DMA_BUFFER, ILI9341_LINE_BUFFER_SIZE, true);
         dma_control.is_writing = true;
         dma_control.current_row = 1;
+    } else {
+        printf("Semaphore timeout in start_screen_draw\n");
     }
 }
 
@@ -358,12 +424,17 @@ static void draw_next_row(void) {
     }
     
     if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
-        convert_row_to_rgb565();
+        // convert_row_to_rgb565(CURRENT_RENDER_BUFFER);
+        DRAW_FRAME_BUFFER();
     } else {
-        memset(line_buffer, 0x0F, sizeof(line_buffer));
+        uint16_t* buf = (uint16_t*)line_buffer;
+        for (int i = 0; i < ILI9341_WIDTH; i++) { // 320 pixels
+            buf[i] = 0x0000; // Fill with 0x00 as 16-bit words
+        }
     }
-    
-    send_payload((uint8_t*)line_buffer, sizeof(line_buffer), true);
+
+    SWAP_BUFFERS();
+    send_payload((uint8_t*)CURRENT_DMA_BUFFER, ILI9341_LINE_BUFFER_SIZE, true);
     dma_control.is_row_completed = false;
     dma_control.current_row++;
 }
@@ -463,7 +534,11 @@ static void process_initialization(void) {
 static void handle_dma_timeout(void) {
     if (dma_control.wait_count >= ILI9341_DMA_TIMEOUT_COUNT) {
         reset_dma_control();
-        // Log timeout error
+        if (dma_semaphore) {
+            xSemaphoreGive(dma_semaphore); // Release on timeout
+        }
+        printf("DMA timeout for row %d, count: %d, resetting dma_control\n", 
+               dma_control.current_row, dma_control.wait_count);
     } else {
         dma_control.wait_count++;
     }
@@ -552,6 +627,8 @@ void ili9341_controller_task(void) {
 static display_info_t* get_framebuffer(void) {
     display_info.data = &framebuffer[0];
     display_info.size = ILI9341_FRAMEBUFFER_SIZE;
+    display_info.fg_color = fg;
+    display_info.bg_color = bg;
 
     return &display_info;
 }

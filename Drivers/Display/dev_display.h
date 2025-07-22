@@ -4,6 +4,8 @@
 typedef struct {
     uint8_t* data;
     uint16_t size;
+    uint16_t fg_color;
+    uint16_t bg_color;
 } display_info_t;
 
 typedef struct {

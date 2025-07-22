@@ -42,6 +42,7 @@ static uint16_t init_timeout_ms = 0;
 static uint8_t init_sequence_index = 0;
 static uint8_t framebuffer[ILI9341_FRAMEBUFFER_SIZE];
 static uint16_t line_buffer[ILI9341_WIDTH];
+static display_info_t display_info;
 
 // Initialization command sequence
 static uint8_t init_commands[] = {
@@ -548,8 +549,11 @@ void ili9341_controller_task(void) {
 }
 
 // Get framebuffer pointer
-static uint8_t *get_framebuffer(void) {
-    return framebuffer;
+static display_info_t* get_framebuffer(void) {
+    display_info.data = &framebuffer[0];
+    display_info.size = ILI9341_FRAMEBUFFER_SIZE;
+
+    return &display_info;
 }
 
 // DMA completion callback

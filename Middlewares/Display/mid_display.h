@@ -18,5 +18,6 @@ typedef struct {
 // Function prototypes
 void display_init(void);
 void display_task(void *param);
+uint16_t get_display_data_bank_index(void);
 
 #endif /* DISPLAY_INTERFACE_H */

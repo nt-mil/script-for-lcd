@@ -106,8 +106,8 @@ static uint16_t swap_byte(uint16_t value) {
     return (value >> 8) | (value << 8);
 }
 
-static inline uint16_t get_pixel_color(uint8_t byte, uint8_t bit_pos) {
-    return (byte & (1 << bit_pos)) ? swap_byte(fg) : swap_byte(bg);
+static inline uint16_t get_pixel_color(uint8_t byte, uint8_t bit_pos, uint16_t fg, uint16_t bg) {
+    return (byte & (1 << bit_pos)) ? fg : bg;
 }
 
 // Draw zero screen
@@ -119,14 +119,16 @@ static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
     }
 
     uint16_t send_index = 0;
+    uint16_t fg_swapped = swap_byte(display_info.fg_color);
+    uint16_t bg_swapped = swap_byte(display_info.bg_color);
+
     for (uint16_t byte_idx = 0; byte_idx < ILI9341_BYTES_PER_ROW; ++byte_idx) {
         if (write_type == DMA_WRITE_CLEAR_SCREEN) {
             buffer[send_index++] = 0x0000;
         } else {
             uint8_t byte = framebuffer[row_offset + byte_idx];
-
             for (int bit = 7; bit >= 0; --bit) {
-                buffer[send_index++] = get_pixel_color(byte, bit);
+                buffer[send_index++] = get_pixel_color(byte, bit, fg_swapped, bg_swapped);
             }
         }
     }

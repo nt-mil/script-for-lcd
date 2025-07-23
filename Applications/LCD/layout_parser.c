@@ -2,6 +2,8 @@
 #include "script_types.h"
 #include "layout_parser.h"
 
+extern EventGroupHandle_t display_event;
+
 /* ----------------- Static Variables --------------------- */
 // Buffer to store last parsed layout command (to avoid re-rendering same layout)
 static uint8_t last_layout_buffer[MAX_BUFFER_LEN];
@@ -20,7 +22,7 @@ static const uint8_t* layout_entry_base;
 
 // Pointer to placeholder entry table (after layout entries)
 static const layout_info_entry_t* layout_info_table;
-static const placeholder_info_table_t* placeholder_info_table;
+// static const placeholder_info_table_t* placeholder_info_table;
 
 // Defaut script's values
 static default_info_t root_info;
@@ -92,32 +94,32 @@ void string_replace_all(char* buffer, size_t buf_size, const char* find, const c
 
 void initialize_layout_binary_info(void) {
     // Read script size and layout count from header (8 bytes total)
-    script_content_size = *((uint32_t*)SCRIPT_DATA_BASE);         // first 4 bytes
-    layout_entry_count  = *((uint32_t*)(SCRIPT_DATA_BASE + 4));   // next 4 bytes
+    script_content_size = *((uint32_t*)SCRIPT_DATA_BASE);         // First 4 bytes
+    layout_entry_count  = *((uint32_t*)(SCRIPT_DATA_BASE + 4));   // Next 4 bytes
 
-    if (!script_content_size || !layout_entry_count)
+    if (script_content_size == 0 || layout_entry_count == 0)
         return;
 
-    layout_content_start = (uint8_t*)(SCRIPT_DATA_BASE + SCRIPT_HEADER_SIZE);
-
-    // Align content size to next multiple of 4
+    // Align script content size to 4 bytes
     uint32_t aligned_script_size = (script_content_size + 3) & ~0x03;
 
-    layout_entry_base = SCRIPT_DATA_BASE + SCRIPT_HEADER_SIZE + aligned_script_size;
-    layout_info_table = (const layout_info_entry_t*)layout_entry_base;
+    // Set layout content and table pointers
+    layout_content_start = (uint8_t*)(SCRIPT_DATA_BASE + SCRIPT_HEADER_SIZE);
+    layout_entry_base    = SCRIPT_DATA_BASE + SCRIPT_HEADER_SIZE + aligned_script_size;
+    layout_info_table    = (const layout_info_entry_t*)layout_entry_base;
 
-    uint32_t layout_table_size = layout_entry_count * sizeof(layout_info_entry_t);
-    uint32_t aligned_layout_table_size = (layout_table_size + 3) & ~0x03;
+    // Calculate total size: header + script (aligned) + layout table
+    uint32_t total_size = SCRIPT_HEADER_SIZE
+                        + aligned_script_size
+                        + layout_entry_count * sizeof(layout_info_entry_t);
 
-    const uint8_t* placeholder_table_base = layout_entry_base + aligned_layout_table_size;
-    placeholder_info_table = (const placeholder_info_table_t*)placeholder_table_base;
-
-    uintptr_t total_size = placeholder_table_base + 1 - SCRIPT_DATA_BASE;
-    if (SCRIPT_DATA_BASE + total_size > layout_data_end) {
-        // Error: malformed .o file
+    // Check for overflow beyond allocated memory
+    if (total_size > *layout_data_size) {
+        // Error: malformed binary
         return;
     }
 
+    // Proceed to extract layout root information
     extract_root_info();
 }
 
@@ -247,7 +249,13 @@ static void extract_root_info(void) {
 
     // Assign default value to driver layer
     // 1. Get driver info (Driver pointer)
-    // 2. xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+    uint16_t index = get_display_data_bank_index();
+    display_info_t* display_info = (display_info_t*)read_from_databank(index);
+
+    display_info->fg_color = root_info.color;
+    display_info->bg_color = root_info.bg_color;
+
+    xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
 }
 
 static bool extract_layout_id(string_buffer_t* buffer, string_buffer_t* layout_id_out) {

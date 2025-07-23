@@ -8,8 +8,8 @@ Root {
 	y: 0
 	width: 320
 	height: 240
-	color: "white"
-	background: "black"
+	color: "gray"
+	background: "magenta"
 
 	Layout {
 		id: welcome

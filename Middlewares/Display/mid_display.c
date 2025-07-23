@@ -43,7 +43,7 @@ void display_init(void) {
     init_event_group();
 
     // Trigger initial display update
-    xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+    // xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
 }
 
 // Display task to handle updates

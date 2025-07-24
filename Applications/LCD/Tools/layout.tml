@@ -15,7 +15,7 @@ Root {
 		id: welcome
 		Area {
 			Text {
-				font: 60x60
+				font: large
 				text: "Welcome to T-World"
 				align: center
 			}
@@ -30,8 +30,8 @@ Root {
 			width: 320
 			height: 60
 			Text {
-				text: "$hour:$min:$sec
-				font: 60x60
+				text: "$hour:$min:$sec"
+				font: medium
 				color: "white"
 				align: center
 			}
@@ -42,7 +42,7 @@ Root {
 			with: 320
 			height: 40
 			Text {
-				font: 40x40
+				font: medium
 				text: "$month $day"
 				align: center
 			}
@@ -58,7 +58,7 @@ Root {
 			height: 30
 			NaviBar {
 				total: $total
-				current: #current
+				current: $current
 			}
 		}
 		Area {
@@ -67,8 +67,8 @@ Root {
 			width: 320
 			height: 40
 			Text {
-				text: $option
-				font: Font_11x18
+				text: "$option"
+				font: medium
 				align: center
 			}
 		}

@@ -20,6 +20,18 @@ class LayoutBuilder:
             "orange": "0xFC00",
         }
 
+        self.align_map = {
+            "center": "0x00",
+            "right": "0x01",
+            "left": "0x02"
+        }
+
+        self.font_map = {
+            "small": "0x00",
+            "medium": "0x01",
+            "large": "0x02"
+        }
+
     def _pad_to_4(self, f):
         padding = (4 - (f.tell() % 4)) % 4
         f.write(b'\x00' * padding)
@@ -44,6 +56,17 @@ class LayoutBuilder:
                      lambda m: f'color:{self._hex_to_rgb565(m.group(1))}', raw)
         raw = re.sub(r'background:\s*"(#[\da-fA-F]{6}|[a-zA-Z]+)"',
                      lambda m: f'background:{self._hex_to_rgb565(m.group(1))}', raw)
+
+        # Replace align
+        raw = re.sub(r'align:\s*([a-zA-Z]+)',
+                     lambda m: f'align:{self.align_map.get(m.group(1), m.group(1))}' ,raw)
+
+        # Replace font
+        raw = re.sub(r'font:\s*([a-zA-Z]+)',
+                     lambda m: f'font:{self.font_map.get(m.group(1), m.group(1))}' ,raw)
+        
+        # Remove double qoutes
+        raw = re.sub(r'"(.*?)"', r'\1', raw)
 
         # Normalize lines
         lines = raw.splitlines()

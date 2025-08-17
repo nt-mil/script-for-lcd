@@ -73,6 +73,7 @@ C_SOURCES =  \
 	Applications/LCD/layout_parser.c \
 	Applications/LCD/layout_renderer.c \
 	Applications/LCD/layout_control.c \
+	Applications/LCD/Fonts/fonts.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -149,7 +150,8 @@ C_INCLUDES =  \
 	-IMiddlewares/Data_Bank \
 	-IDrivers/Display \
 	-IDrivers/Display/ILI9341 \
-	-IApplications/LCD
+	-IApplications/LCD \
+	-IApplications/LCD/Fonts
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

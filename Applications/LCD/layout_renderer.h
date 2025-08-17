@@ -13,7 +13,7 @@ typedef struct {
 // align struct
 typedef struct {
     AREA area;
-    uint8_t alignment;
+    alignment_type_t alignment;
 } ALIGN;
 
 // bitmap struct

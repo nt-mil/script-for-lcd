@@ -33,4 +33,5 @@ uint8_t* get_prepared_layout(void);
 default_info_t* get_root_info(void);
 uint16_t parse_field_u16(const uint8_t* content, const char* key);
 uint8_t parse_field_u8(const uint8_t* content, const char* key);
+int parse_field(const uint8_t* content, const char* key, void* value, size_t value_size, field_type_t type);
 #endif /* _LAYOUT_BINARY_H_ */

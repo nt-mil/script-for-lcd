@@ -47,7 +47,7 @@ int main(void)
 
     display_init();
 
-    test_display();
+    // test_display();
 
     process_layout_script();
 
@@ -161,7 +161,7 @@ void test_display(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(display_task, "display", 300, NULL, 5, NULL);
+    BaseType_t ret = xTaskCreate(display_task, "display", 500, NULL, 5, NULL);
     configASSERT(ret == pdPASS);
 
     // ret = xTaskCreate(test_display, "test", 300, NULL, 4, NULL);

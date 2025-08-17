@@ -21,15 +21,15 @@ class LayoutBuilder:
         }
 
         self.align_map = {
-            "center": "0x00",
-            "right": "0x01",
-            "left": "0x02"
+            "center": "1",
+            "right": "2",
+            "left": "3"
         }
 
         self.font_map = {
-            "small": "0x00",
-            "medium": "0x01",
-            "large": "0x02"
+            "small": "0",
+            "medium": "1",
+            "large": "2"
         }
 
     def _pad_to_4(self, f):

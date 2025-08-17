@@ -213,6 +213,51 @@ uint8_t parse_field_u8(const uint8_t* content, const char* key) {
     return (uint8_t)parse_field_u16(content, key);
 }
 
+int parse_field(const uint8_t* content, const char* key, void* value, size_t value_size, field_type_t type) {
+    if (!content || !key || !value) {
+        return -1; // Invalid input
+    }
+
+    char pattern[32];
+    if (snprintf(pattern, sizeof(pattern), "%s:", key) >= (int)sizeof(pattern)) {
+        return -1; // Key too long
+    }
+
+    const char* found = strstr((const char*)content, pattern);
+    if (!found) return 0; // Key not found
+
+    found += strlen(pattern); // Move past the pattern
+    int result = 0;
+
+    switch (type) {
+        case FIELD_TYPE_STRING:
+            if (value_size < 1) return -1; // Ensure space for null terminator
+            result = sscanf(found, " %[^\n\r]", (char*)value);
+            ((char*)value)[value_size - 1] = '\0'; // Ensure null termination
+            break;
+        case FIELD_TYPE_UINT8:
+            if (value_size != sizeof(uint8_t)) return -1;
+            {
+                uint8_t val = 0;
+                result = sscanf(found, " %hhu", &val);
+                if (result > 0) *(uint8_t*)value = val;
+            }
+            break;
+        case FIELD_TYPE_UINT16:
+            if (value_size != sizeof(uint16_t)) return -1;
+            {
+                uint16_t val = 0;
+                result = sscanf(found, " %hu", &val);
+                if (result > 0) *(uint16_t*)value = val;
+            }
+            break;
+        default:
+            return -1; // Unsupported type
+    }
+
+    return (result > 0) ? 1 : 0; // Success if parsed
+}
+
 static void execute_layout(string_buffer_t* str) {
     string_buffer_t layout_id;
     placeholder_pair_t pairs[MAX_PLACEHOLDERS];

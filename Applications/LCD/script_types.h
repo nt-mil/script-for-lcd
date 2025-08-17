@@ -15,10 +15,31 @@ typedef struct {
 } area_t;
 
 typedef enum {
-    FONT_S = 0,
-    FONT_M,
-    FONT_L,
+    FONT_SMALL = 0,
+    FONT_MEDIUM,
+    FONT_LARGE,
 } font_type_t;
+#define FONT_TYPE_COUNT (FONT_LARGE + 1)
+
+typedef enum {
+    ALIGN_NONE = 0,
+    ALIGN_CENTER,
+    ALIGN_RIGHT,
+    ALIGN_LEFT,
+} alignment_type_t;
+
+typedef enum {
+    FIELD_TYPE_STRING,
+    FIELD_TYPE_UINT8,
+    FIELD_TYPE_UINT16
+} field_type_t;
+
+typedef struct {
+    const char* key;
+    void* value;
+    size_t size;
+    field_type_t type;
+} field_mapping_t;
 
 typedef struct {
     uint16_t x_pos, y_pos;
@@ -31,14 +52,6 @@ typedef struct {
     uint8_t* data_ptr;
     size_t length;
 } string_buffer_t;
-
-/* ------ Alignment ------ */
-typedef enum {
-    ALIGN_NONE = 0,
-    ALIGN_CENTER,
-    ALIGN_LEFT,
-    ALIGN_RIGHT
-} alignment_type_t;
 
 /* ------ Layout Entry Table ------ */
 typedef struct {

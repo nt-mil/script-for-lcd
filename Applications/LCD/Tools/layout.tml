@@ -8,16 +8,16 @@ Root {
 	y: 0
 	width: 320
 	height: 240
-	color: "gray"
-	background: "magenta"
+	color: "0x44d8"
+	background: "0x0841"
 
 	Layout {
 		id: welcome
 		Area {
 			Text {
-				font: large
-				text: "Welcome to T-World"
-				align: center
+				font: medium
+				text: "This is a long testing string to wrap"
+				align: left
 			}
 		}
 	}
@@ -33,12 +33,12 @@ Root {
 				text: "$hour:$min:$sec"
 				font: medium
 				color: "white"
-				align: center
+				align: right
 			}
 		}
 		Area {
 			x: 0
-			y: 50
+			y: 150
 			with: 320
 			height: 40
 			Text {

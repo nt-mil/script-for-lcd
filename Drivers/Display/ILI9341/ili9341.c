@@ -10,12 +10,12 @@ extern EventGroupHandle_t display_event;
 #define ILI9341_SLEEP_OUT_DELAY_MS  (120)
 #define ILI9341_BACKLIGHT_DELAY_MS  (13)
 
-#define CURRENT_RENDER_BUFFER  (line_buffer[active_buf_idx])
-#define CURRENT_DMA_BUFFER     (line_buffer[1 - active_buf_idx])
+#define CURRENT_RENDER_LINE_BUFFER  (line_buffer[active_buf_idx])
+#define CURRENT_DMA_LINE_BUFFER     (line_buffer[1 - active_buf_idx])
 
-#define SWAP_BUFFERS() do { active_buf_idx = 1 - active_buf_idx; } while (0)
-#define DRAW_CLEAR_SCREEN()     {draw_screen(CURRENT_RENDER_BUFFER, DMA_WRITE_CLEAR_SCREEN);}
-#define DRAW_FRAME_BUFFER()     {draw_screen(CURRENT_RENDER_BUFFER, DMA_WRITE_FRAMEBUFFER);}
+#define SWAP_LINE_BUFFERS() do { active_buf_idx = 1 - active_buf_idx; } while (0)
+#define DRAW_CLEAR_SCREEN()     {draw_screen(CURRENT_RENDER_LINE_BUFFER, DMA_WRITE_CLEAR_SCREEN);}
+#define DRAW_FRAME_BUFFER()     {draw_screen(CURRENT_RENDER_LINE_BUFFER, DMA_WRITE_FRAMEBUFFER);}
 
 // DMA write operation types
 typedef enum
@@ -38,16 +38,14 @@ typedef struct
 } dma_control_t;
 
 // Static variables
-
 static SemaphoreHandle_t dma_semaphore = NULL;
-
 static dma_control_t dma_control = {0};
 static ili9341_init_state_t init_state = ILI9341_INIT_NONE;
 static ili9341_operation_state_t current_state = ILI9341_STATE_READY;
 static ili9341_operation_state_t target_state = ILI9341_STATE_READY;
+static ili9341_display_buffer_t framebuffer;
 static uint16_t init_timeout_ms = 0;
 static uint8_t init_sequence_index = 0;
-static uint8_t framebuffer[ILI9341_FRAMEBUFFER_SIZE];
 static uint16_t line_buffer[2][ILI9341_WIDTH];
 static uint8_t active_buf_idx = 0; // 0 or 1
 static display_info_t display_info;
@@ -86,6 +84,46 @@ static void reset_dma_control(void) {
     dma_control.write_type = DMA_WRITE_NONE;
     dma_control.is_writing = false;
     dma_control.is_row_completed = false;
+
+    if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
+        framebuffer.buffer_page[framebuffer.active_page].state = ILI9341_BUFFER_STATE_IDLE;
+    }
+}
+
+// Framebuffer initialization
+static void init_framebuffer(void) {
+    // Set initial page assignments
+    framebuffer.render_page = 0;  // Page 0 is for rendering
+    framebuffer.active_page = 1;  // Page 1 is initially displayed
+
+    // Initialize both buffer pages
+    for (int i = 0; i < 2; i++) {
+        framebuffer.buffer_page[i].state = ILI9341_BUFFER_STATE_IDLE;
+
+        memset(framebuffer.buffer_page[i].data, 0, ILI9341_FRAMEBUFFER_SIZE);
+    }
+}
+
+static bool swap_framebuffers(void) {
+    if (framebuffer.buffer_page[framebuffer.render_page].state == ILI9341_BUFFER_STATE_READY_TO_DISPLAY) {
+        portENTER_CRITICAL();
+        if (framebuffer.buffer_page[framebuffer.render_page].state == ILI9341_BUFFER_STATE_READY_TO_DISPLAY) { // double check
+            // Save current indices
+            uint8_t old_render_page = framebuffer.render_page;
+            uint8_t old_active_page = framebuffer.active_page;
+
+            // Swap page indices
+            framebuffer.active_page = old_render_page;
+            framebuffer.render_page = old_active_page;
+
+            // Update buffer states
+            framebuffer.buffer_page[old_render_page].state = ILI9341_BUFFER_STATE_IDLE;
+            framebuffer.buffer_page[old_active_page].state = ILI9341_BUFFER_STATE_IN_DISPLAY;
+        }
+        portEXIT_CRITICAL();
+        return true;
+    }
+    return false;
 }
 
 // Initialize LCD controller state
@@ -93,12 +131,13 @@ static void reset_lcd_controller(void) {
     // Reset operational and initialization states to their initial values
     current_state = ILI9341_STATE_READY;
     init_state = ILI9341_INIT_NONE;
+
     target_state = ILI9341_STATE_READY;
     init_timeout_ms = 0;
     init_sequence_index = 0;
+
     reset_dma_control();
-    // Clear framebuffer to prevent stale data
-    memset(framebuffer, 0, ILI9341_FRAMEBUFFER_SIZE);
+    init_framebuffer();
 }
 
 // Convert 16-bit value to RGB565
@@ -123,51 +162,16 @@ static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
         if (write_type == DMA_WRITE_CLEAR_SCREEN) {
             buffer[send_index++] = 0x0000;
         } else {
-            uint8_t byte = framebuffer[row_offset + byte_idx];
-
-            for (int bit = 7; bit >= 0; --bit) {
-                buffer[send_index++] = get_pixel_color(byte, bit);
+            if (framebuffer.buffer_page[framebuffer.active_page].state == ILI9341_BUFFER_STATE_READY_TO_DISPLAY) {
+                uint8_t* source_buffer = &(framebuffer.buffer_page[framebuffer.active_page].data[0]);
+                uint8_t byte = source_buffer[row_offset + byte_idx];
+                for (int bit = 7; bit >= 0; --bit) {
+                    buffer[send_index++] = get_pixel_color(byte, bit);
+                }
             }
         }
     }
 }
-
-#if 0
-// Convert a row of 1-bit framebuffer data to RGB565 color format
-static void convert_row_to_rgb565(uint16_t* buffer) {
-    uint16_t row_offset = dma_control.current_row * ILI9341_BYTES_PER_ROW;
-
-    if (row_offset >= ILI9341_FRAMEBUFFER_SIZE - ILI9341_BYTES_PER_ROW) {
-        return; // Prevent buffer overflow
-    }
-
-    uint16_t send_index = 0;
-#if 1
-    uint16_t _fg = swap_byte(fg);
-    uint16_t _bg = swap_byte(bg);
-#endif
-
-    for (uint16_t byte_idx = 0; byte_idx < ILI9341_BYTES_PER_ROW; ++byte_idx) {
-        uint8_t byte = framebuffer[row_offset + byte_idx];
-#if 1
-        uint16_t color = fg; /// default
-        for (uint8_t bit_idx = 0; bit_idx < 8; bit_idx++) {
-            color = ((byte << bit_idx)  & 0x80)? _fg : _bg;
-            buffer[send_index++] = color;
-        }
-#else
-        // buffer[send_index++] = (byte & 0x80) ? swap_byte(fg) : swap_byte(bg); // Bit 7
-        // buffer[send_index++] = (byte & 0x40) ? swap_byte(fg) : swap_byte(bg); // Bit 6
-        // buffer[send_index++] = (byte & 0x20) ? swap_byte(fg) : swap_byte(bg); // Bit 5
-        // buffer[send_index++] = (byte & 0x10) ? swap_byte(fg) : swap_byte(bg); // Bit 4
-        // buffer[send_index++] = (byte & 0x08) ? swap_byte(fg) : swap_byte(bg); // Bit 3
-        // buffer[send_index++] = (byte & 0x04) ? swap_byte(fg) : swap_byte(bg); // Bit 2
-        // buffer[send_index++] = (byte & 0x02) ? swap_byte(fg) : swap_byte(bg); // Bit 1
-        // buffer[send_index++] = (byte & 0x01) ? swap_byte(fg) : swap_byte(bg); // Bit 0
-#endif
-    }
-}
-#endif
 
 // Send data over SPI
 static HAL_StatusTypeDef send_data(ili9341_data_type_t type, uint8_t *data, uint16_t len, bool use_dma) {
@@ -245,7 +249,6 @@ static void hw_reset(void) {
 
 // Execute initialization command sequence
 static void execute_init_sequence(void) {
-#if 1
     init_sequence_index = 0;
     while (init_sequence_index < sizeof(init_commands)) {
         uint8_t cmd = init_commands[init_sequence_index++];
@@ -257,133 +260,6 @@ static void execute_init_sequence(void) {
             init_sequence_index += len;
         }
     }
-#else
-    ILI9341_Write_Command(0x01);
-    HAL_Delay(100);
-
-    //POWER CONTROL A
-    ILI9341_Write_Command(0xCB);
-    ILI9341_Write_Data(0x39);
-    ILI9341_Write_Data(0x2C);
-    ILI9341_Write_Data(0x00);
-    ILI9341_Write_Data(0x34);
-    ILI9341_Write_Data(0x02);
-
-    //POWER CONTROL B
-    ILI9341_Write_Command(0xCF);
-    ILI9341_Write_Data(0x00);
-    ILI9341_Write_Data(0xC1);
-    ILI9341_Write_Data(0x30);
-
-    //DRIVER TIMING CONTROL A
-    ILI9341_Write_Command(0xE8);
-    ILI9341_Write_Data(0x85);
-    ILI9341_Write_Data(0x00);
-    ILI9341_Write_Data(0x78);
-
-    //DRIVER TIMING CONTROL B
-    ILI9341_Write_Command(0xEA);
-    ILI9341_Write_Data(0x00);
-    ILI9341_Write_Data(0x00);
-
-    //POWER ON SEQUENCE CONTROL
-    ILI9341_Write_Command(0xED);
-    ILI9341_Write_Data(0x64);
-    ILI9341_Write_Data(0x03);
-    ILI9341_Write_Data(0x12);
-    ILI9341_Write_Data(0x81);
-
-    //PUMP RATIO CONTROL
-    ILI9341_Write_Command(0xF7);
-    ILI9341_Write_Data(0x20);
-
-    //POWER CONTROL,VRH[5:0]
-    ILI9341_Write_Command(0xC0);
-    ILI9341_Write_Data(0x23);
-
-    //POWER CONTROL,SAP[2:0];BT[3:0]
-    ILI9341_Write_Command(0xC1);
-    ILI9341_Write_Data(0x10);
-
-    //VCM CONTROL
-    ILI9341_Write_Command(0xC5);
-    ILI9341_Write_Data(0x3E);
-    ILI9341_Write_Data(0x28);
-
-    //VCM CONTROL 2
-    ILI9341_Write_Command(0xC7);
-    ILI9341_Write_Data(0x86);
-
-    //MEMORY ACCESS CONTROL
-    ILI9341_Write_Command(0x36);
-    ILI9341_Write_Data(0x28);
-
-    //PIXEL FORMAT
-    ILI9341_Write_Command(0x3A);
-    ILI9341_Write_Data(0x55);
-
-    //FRAME RATIO CONTROL, STANDARD RGB COLOR
-    ILI9341_Write_Command(0xB1);
-    ILI9341_Write_Data(0x00);
-    ILI9341_Write_Data(0x18);
-
-    //DISPLAY FUNCTION CONTROL
-    ILI9341_Write_Command(0xB6);
-    ILI9341_Write_Data(0x08);
-    ILI9341_Write_Data(0x82);
-    ILI9341_Write_Data(0x27);
-
-    //3GAMMA FUNCTION DISABLE
-    ILI9341_Write_Command(0xF2);
-    ILI9341_Write_Data(0x00);
-
-    //GAMMA CURVE SELECTED
-    ILI9341_Write_Command(0x26);
-    ILI9341_Write_Data(0x01);
-
-    //POSITIVE GAMMA CORRECTION
-    ILI9341_Write_Command(0xE0);
-    ILI9341_Write_Data(0x0F);
-    ILI9341_Write_Data(0x31);
-    ILI9341_Write_Data(0x2B);
-    ILI9341_Write_Data(0x0C);
-    ILI9341_Write_Data(0x0E);
-    ILI9341_Write_Data(0x08);
-    ILI9341_Write_Data(0x4E);
-    ILI9341_Write_Data(0xF1);
-    ILI9341_Write_Data(0x37);
-    ILI9341_Write_Data(0x07);
-    ILI9341_Write_Data(0x10);
-    ILI9341_Write_Data(0x03);
-    ILI9341_Write_Data(0x0E);
-    ILI9341_Write_Data(0x09);
-    ILI9341_Write_Data(0x00);
-
-    //NEGATIVE GAMMA CORRECTION
-    ILI9341_Write_Command(0xE1);
-    ILI9341_Write_Data(0x00);
-    ILI9341_Write_Data(0x0E);
-    ILI9341_Write_Data(0x14);
-    ILI9341_Write_Data(0x03);
-    ILI9341_Write_Data(0x11);
-    ILI9341_Write_Data(0x07);
-    ILI9341_Write_Data(0x31);
-    ILI9341_Write_Data(0xC1);
-    ILI9341_Write_Data(0x48);
-    ILI9341_Write_Data(0x08);
-    ILI9341_Write_Data(0x0F);
-    ILI9341_Write_Data(0x0C);
-    ILI9341_Write_Data(0x31);
-    ILI9341_Write_Data(0x36);
-    ILI9341_Write_Data(0x0F);
-
-    //EXIT SLEEP
-    ILI9341_Write_Command(0x11);
-    HAL_Delay(120);
-
-    //TURN ON DISPLAY
-    ILI9341_Write_Command(0x29);
-#endif
 }
 
 // Start drawing a screen (initial, clear, or framebuffer)
@@ -392,17 +268,15 @@ static void start_screen_draw(void) {
         set_memory_window();
         
         if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
-            // convert_row_to_rgb565(CURRENT_RENDER_BUFFER);
-            DRAW_FRAME_BUFFER();
-        } else {
-            uint16_t* buf = (uint16_t*)line_buffer;
-            for (int i = 0; i < ILI9341_WIDTH; i++) { // 320 pixels
-                buf[i] = 0x0000; // Fill with 0x00 as 16-bit words
+            if (swap_framebuffers() == true) {
+                DRAW_FRAME_BUFFER();
             }
+        } else {
+            DRAW_CLEAR_SCREEN();
         }
 
-        SWAP_BUFFERS();
-        send_payload((uint8_t*)CURRENT_DMA_BUFFER, ILI9341_LINE_BUFFER_SIZE, true);
+        SWAP_LINE_BUFFERS();
+        send_payload((uint8_t*)CURRENT_DMA_LINE_BUFFER, ILI9341_LINE_BUFFER_SIZE, true);
         dma_control.is_writing = true;
         dma_control.current_row = 1;
     } else {
@@ -424,17 +298,13 @@ static void draw_next_row(void) {
     }
     
     if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
-        // convert_row_to_rgb565(CURRENT_RENDER_BUFFER);
         DRAW_FRAME_BUFFER();
     } else {
-        uint16_t* buf = (uint16_t*)line_buffer;
-        for (int i = 0; i < ILI9341_WIDTH; i++) { // 320 pixels
-            buf[i] = 0x0000; // Fill with 0x00 as 16-bit words
-        }
+        DRAW_CLEAR_SCREEN();
     }
 
-    SWAP_BUFFERS();
-    send_payload((uint8_t*)CURRENT_DMA_BUFFER, ILI9341_LINE_BUFFER_SIZE, true);
+    SWAP_LINE_BUFFERS();
+    send_payload((uint8_t*)CURRENT_DMA_LINE_BUFFER, ILI9341_LINE_BUFFER_SIZE, true);
     dma_control.is_row_completed = false;
     dma_control.current_row++;
 }
@@ -625,7 +495,7 @@ void ili9341_controller_task(void) {
 
 // Get framebuffer pointer
 static display_info_t* get_framebuffer(void) {
-    display_info.data = &framebuffer[0];
+    display_info.data = (uint8_t*)&framebuffer;
     display_info.size = ILI9341_FRAMEBUFFER_SIZE;
     display_info.fg_color = fg;
     display_info.bg_color = bg;

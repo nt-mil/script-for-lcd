@@ -39,9 +39,7 @@ typedef enum {
 
 typedef enum {
     ILI9341_BUFFER_STATE_IDLE = 0,
-    ILI9341_BUFFER_STATE_IN_RENDER,
     ILI9341_BUFFER_STATE_READY_TO_DISPLAY,
-    ILI9341_BUFFER_STATE_IN_DISPLAY,
 } ili9341_buffer_state_t;
 
 typedef struct {

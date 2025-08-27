@@ -79,15 +79,15 @@ static uint8_t init_commands[] = {
 
 // Initialize DMA control structure
 static void reset_dma_control(void) {
+    if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
+        framebuffer.buffer_page[framebuffer.active_page].state = ILI9341_BUFFER_STATE_IDLE;
+    }
     dma_control.current_row = 0;
     dma_control.wait_count = 0;
     dma_control.write_type = DMA_WRITE_NONE;
     dma_control.is_writing = false;
     dma_control.is_row_completed = false;
 
-    if (dma_control.write_type == DMA_WRITE_FRAMEBUFFER) {
-        framebuffer.buffer_page[framebuffer.active_page].state = ILI9341_BUFFER_STATE_IDLE;
-    }
 }
 
 // Framebuffer initialization
@@ -117,8 +117,8 @@ static bool swap_framebuffers(void) {
             framebuffer.render_page = old_active_page;
 
             // Update buffer states
-            framebuffer.buffer_page[old_render_page].state = ILI9341_BUFFER_STATE_IDLE;
-            framebuffer.buffer_page[old_active_page].state = ILI9341_BUFFER_STATE_IN_DISPLAY;
+            framebuffer.buffer_page[framebuffer.render_page].state = ILI9341_BUFFER_STATE_IDLE;
+            framebuffer.buffer_page[framebuffer.active_page].state = ILI9341_BUFFER_STATE_READY_TO_DISPLAY;
         }
         portEXIT_CRITICAL();
         return true;
@@ -168,6 +168,7 @@ static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
                 for (int bit = 7; bit >= 0; --bit) {
                     buffer[send_index++] = get_pixel_color(byte, bit);
                 }
+                // framebuffer.buffer_page[framebuffer.active_page].state = ILI9341_BUFFER_STATE_IN_DISPLAY;
             }
         }
     }

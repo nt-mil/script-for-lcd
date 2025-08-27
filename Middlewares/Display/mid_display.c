@@ -38,12 +38,13 @@ void display_init(void) {
     }
 
     display_info_t* display_info = driver->get_framebuffer();
+    ili9341_display_buffer_t* framebuffer = (ili9341_display_buffer_t*)(&display_info->data[0]);
     register_display_info(display_info);
 
     init_event_group();
 
     // Trigger initial display update
-    xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+    // xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
 }
 
 // Display task to handle updates

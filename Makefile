@@ -69,6 +69,7 @@ C_SOURCES =  \
 	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
 	Middlewares/Display/mid_display.c \
 	Middlewares/Data_Bank/databank.c \
+	Middlewares/Push_Sub/broker.c \
 	Drivers/Display/ILI9341/ili9341.c
 
 # ASM sources
@@ -142,6 +143,7 @@ C_INCLUDES =  \
 	-IThird_Parties/FreeRTOS/portable/GCC/ARM_CM4F \
 	-IMiddlewares/Display \
 	-IMiddlewares/Data_Bank \
+	-IMiddlewares/Push_Sub \
 	-IDrivers/Display \
 	-IDrivers/Display/ILI9341
 

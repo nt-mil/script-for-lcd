@@ -140,26 +140,18 @@ static void reset_lcd_controller(void) {
     init_framebuffer();
 }
 
-// Convert 16-bit value to RGB565
-static uint16_t swap_byte(uint16_t value) {
-    return (value >> 8) | (value << 8);
-}
-
-static inline uint16_t get_pixel_color(uint8_t byte, uint8_t bit_pos, uint16_t fg, uint16_t bg) {
+static inline uint16_t get_pixel_color(uint8_t byte, uint8_t bit_pos) {
     return (byte & (1 << bit_pos)) ? fg : bg;
 }
 
 // Draw zero screen
 static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
     uint16_t row_offset = dma_control.current_row * ILI9341_BYTES_PER_ROW;
-
     if (row_offset >= ILI9341_FRAMEBUFFER_SIZE - ILI9341_BYTES_PER_ROW) {
         return; // Prevent buffer overflow
     }
 
     uint16_t send_index = 0;
-    uint16_t fg_swapped = swap_byte(display_info.fg_color);
-    uint16_t bg_swapped = swap_byte(display_info.bg_color);
 
     for (uint16_t byte_idx = 0; byte_idx < ILI9341_BYTES_PER_ROW; ++byte_idx) {
         if (write_type == DMA_WRITE_CLEAR_SCREEN) {
@@ -171,7 +163,6 @@ static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
                 for (int bit = 7; bit >= 0; --bit) {
                     buffer[send_index++] = get_pixel_color(byte, bit);
                 }
-                // framebuffer.buffer_page[framebuffer.active_page].state = ILI9341_BUFFER_STATE_IN_DISPLAY;
             }
         }
     }

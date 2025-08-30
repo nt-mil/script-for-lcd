@@ -40,6 +40,11 @@ static const size_t num_mappings = sizeof(field_mappings) / sizeof(field_mapping
 
 static bool script_ready = false;
 
+// Convert 16-bit value to RGB565
+static uint16_t swap_byte(uint16_t value) {
+    return (value >> 8) | (value << 8);
+}
+
 static void draw_char_1ppb(uint8_t* framebuffer, int x, int y, char character, 
                           uint16_t font_width, uint16_t font_height, const uint16_t* font_data) {
     // Validate inputs
@@ -298,8 +303,8 @@ static void init_layout_info(default_info_t* info) {
     width = info->width;
     height = info->height;
 
-    color = info->color;
-    bg_color = info->bg_color;
+    color = swap_byte(info->color);
+    bg_color = swap_byte(info->bg_color);
 }
 
 static void execute_rendering(void) {

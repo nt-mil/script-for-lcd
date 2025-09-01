@@ -40,9 +40,19 @@ static const size_t num_mappings = sizeof(field_mappings) / sizeof(field_mapping
 
 static bool script_ready = false;
 
-// Convert 16-bit value to RGB565
-static uint16_t swap_byte(uint16_t value) {
-    return (value >> 8) | (value << 8);
+static uint8_t* get_render_screen(const display_info_t* display_info) {
+    ili9341_display_buffer_t* framebuffer = (ili9341_display_buffer_t*)display_info->data;
+    
+    if (framebuffer->buffer_page[framebuffer->render_page].state == ILI9341_BUFFER_STATE_IDLE) {
+        return (uint8_t*)&framebuffer->buffer_page[framebuffer->render_page].data[0];
+    }
+
+    return NULL;
+}
+
+static void set_ready_screen(const display_info_t* display_info) {
+    ili9341_display_buffer_t* framebuffer = (ili9341_display_buffer_t*)display_info->data;
+    framebuffer->buffer_page[framebuffer->render_page].state = ILI9341_BUFFER_STATE_READY_TO_DISPLAY;
 }
 
 static void draw_char_1ppb(uint8_t* framebuffer, int x, int y, char character, 
@@ -172,37 +182,21 @@ static void draw_one_line(const char* segment, uint16_t draw_x, uint16_t draw_y,
     uint16_t font_width = font_info->width;
     uint16_t draw_pos_x = draw_x;
 
-    for (const char* p = segment; *p; ++p) {
-        if (*p < 32 || *p > 126) continue; // Skip non-printable
+    uint8_t* render_buff = get_render_screen(display_info);
 
-        draw_char_1ppb(display_info->data, draw_pos_x, draw_y, *p, font_info->width, font_info->height, font_info->data);
-        draw_pos_x += font_width + spacing;
+    if (render_buff) {
+        for (const char* p = segment; *p; ++p) {
+            if (*p < 32 || *p > 126) continue; // Skip non-printable
 
-        if (draw_pos_x >= ILI9341_WIDTH) {
-            break;
+            draw_char_1ppb(render_buff, draw_pos_x, draw_y, *p, font_info->width, font_info->height, font_info->data);
+            draw_pos_x += font_width + spacing;
+
+            if (draw_pos_x >= ILI9341_WIDTH) {
+                break;
+            }
         }
     }
 }
-
-// void draw_string_aligned(uint8_t *fb, int fb_width, int x, int y,
-//                          const char *str, int len, TextAlign align,
-//                          int layout_width) {
-//     int text_width = get_string_width(str, len);
-
-//     int start_x = x;
-//     if (align == ALIGN_CENTER) {
-//         start_x = x + (layout_width - text_width) / 2;
-//     } else if (align == ALIGN_RIGHT) {
-//         start_x = x + (layout_width - text_width);
-//     }
-
-//     int cursor_x = start_x;
-//     for (int i = 0; i < len; i++) {
-//         int w = get_char_width(str[i]);
-//         draw_char(fb, fb_width, cursor_x, y, str[i]);
-//         cursor_x += w;
-//     }
-// }
 
 // Main function to draw multi-line string
 static void draw_string(const char* str, int spacing) {
@@ -231,6 +225,7 @@ static void draw_string(const char* str, int spacing) {
         uint16_t base_x, base_y;
         calculate_block_position(1, text_width, font_info->height, &base_x, &base_y);
         draw_one_line(str, base_x, base_y, font_info, spacing, display_info);
+        set_ready_screen(display_info);
         return;
     }
 
@@ -269,6 +264,7 @@ static void draw_string(const char* str, int spacing) {
         // Stop if off screen
         if (draw_y >= ILI9341_HEIGHT) break;
     }
+    set_ready_screen(display_info);
 }
 
 static void draw_layout(void) {

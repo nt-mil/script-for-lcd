@@ -1,0 +1,76 @@
+# Layout TML v1.0
+# Author: Trieu
+# Description: Main layout for T-World
+
+Root {
+	id: main
+	x: 0
+	y: 0
+	width: 320
+	height: 240
+	color: "0x44d8"
+	background: "0x0841"
+
+	Layout {
+		id: welcome
+		Area {
+			Text {
+				font: medium
+				text: "This is a long testing string to wrap"
+				align: left
+			}
+		}
+	}
+
+	Layout {
+		id: clock_and_date
+		Area {
+			x: 0
+			y: 90
+			width: 320
+			height: 60
+			Text {
+				text: "$hour:$min:$sec"
+				font: medium
+				color: "white"
+				align: right
+			}
+		}
+		Area {
+			x: 0
+			y: 150
+			with: 320
+			height: 40
+			Text {
+				font: medium
+				text: "$month $day"
+				align: center
+			}
+		}
+	}
+
+	Layout {
+		id: setting
+		Area {
+			x: 0
+			y: 0
+			width: 320
+			height: 30
+			NaviBar {
+				total: $total
+				current: $current
+			}
+		}
+		Area {
+			x: 150
+			y:200
+			width: 320
+			height: 40
+			Text {
+				text: "$option"
+				font: medium
+				align: center
+			}
+		}
+	}
+}

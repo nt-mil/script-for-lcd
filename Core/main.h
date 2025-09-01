@@ -29,6 +29,8 @@ extern "C" {
 #include "mid_display.h"
 #include "databank.h"
 
+#include "layout_control.h"
+
 
 void Error_Handler(void);
 

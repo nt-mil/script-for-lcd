@@ -47,7 +47,9 @@ int main(void)
 
     display_init();
 
-    test_display();
+    // test_display();
+
+    process_layout_script();
 
     Task_Init();
 
@@ -106,15 +108,22 @@ void SystemClock_Config(void)
 
 #define ROWS_PER_BAND 20
 // Load checkerboard pattern into framebuffer for all 240 rows
-void load_test_checkerboard(uint8_t *framebuffer) {
-    uint16_t row;
-    if (framebuffer == NULL) return;
+void load_test_checkerboard(void *data) {
+    if (data == NULL) return;
 
-    // Copy alternating row patterns to create checkerboard effect
-    for (row = 0; row < ILI9341_HEIGHT; row++) {
-        const uint8_t *row_pattern = ((row / ROWS_PER_BAND) % 2 == 0) ? 
-            test_row_checkerboard_black : test_row_checkerboard_white;
-        memcpy(&framebuffer[row * ILI9341_BYTES_PER_ROW], row_pattern, ILI9341_BYTES_PER_ROW);
+    uint16_t row;
+    ili9341_display_buffer_t* framebuffer = (ili9341_display_buffer_t*)data;
+
+    if (framebuffer->buffer_page[framebuffer->render_page].state == ILI9341_BUFFER_STATE_IDLE) {
+        uint8_t* source_buffer = (uint8_t*)&framebuffer->buffer_page[framebuffer->render_page].data[0];
+        // Copy alternating row patterns to create checkerboard effect
+        for (row = 0; row < ILI9341_HEIGHT; row++) {
+            const uint8_t *row_pattern = ((row / ROWS_PER_BAND) % 2 == 0) ? 
+                test_row_checkerboard_black : test_row_checkerboard_white;
+            memcpy(&source_buffer[row * ILI9341_BYTES_PER_ROW], row_pattern, ILI9341_BYTES_PER_ROW);
+        }
+
+        framebuffer->buffer_page[framebuffer->render_page].state = ILI9341_BUFFER_STATE_READY_TO_DISPLAY;
     }
 }
 
@@ -159,7 +168,7 @@ void test_display(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(display_task, "display", 300, NULL, 5, NULL);
+    BaseType_t ret = xTaskCreate(display_task, "display", 500, NULL, 5, NULL);
     configASSERT(ret == pdPASS);
 
     // ret = xTaskCreate(test_display, "test", 300, NULL, 4, NULL);

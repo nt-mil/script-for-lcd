@@ -69,7 +69,11 @@ C_SOURCES =  \
 	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
 	Middlewares/Display/mid_display.c \
 	Middlewares/Data_Bank/databank.c \
-	Drivers/Display/ILI9341/ili9341.c
+	Drivers/Display/ILI9341/ili9341.c \
+	Applications/LCD/layout_parser.c \
+	Applications/LCD/layout_renderer.c \
+	Applications/LCD/layout_control.c \
+	Applications/LCD/Fonts/fonts.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -78,6 +82,8 @@ startup_stm32f401xe.s
 # ASM sources
 ASMM_SOURCES = 
 
+#Layout Info.o
+LAYOUT_OBJ := $(abspath Applications/LCD/Tools/layout.o)
 
 #######################################
 # binaries
@@ -143,7 +149,9 @@ C_INCLUDES =  \
 	-IMiddlewares/Display \
 	-IMiddlewares/Data_Bank \
 	-IDrivers/Display \
-	-IDrivers/Display/ILI9341
+	-IDrivers/Display/ILI9341 \
+	-IApplications/LCD \
+	-IApplications/LCD/Fonts
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -185,6 +193,9 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMM_SOURCES:.S=.o)))
 vpath %.S $(sort $(dir $(ASMM_SOURCES)))
+OBJECTS += $(LAYOUT_OBJ)
+
+CLEAN_OBJS := $(filter-out $(LAYOUT_OBJ), $(OBJECTS))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
@@ -211,7 +222,7 @@ $(BUILD_DIR):
 # clean up
 #######################################
 clean:
-	-rm -fR $(BUILD_DIR)
+	-rm -fR $(BUILD_DIR) $(CLEAN_OBJS)
   
 #######################################
 # dependencies

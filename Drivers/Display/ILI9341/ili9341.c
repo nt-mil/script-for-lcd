@@ -51,8 +51,8 @@ static uint8_t active_buf_idx = 0; // 0 or 1
 static display_info_t display_info;
 
 // Color info
-static uint16_t fg = 0xd68a;
-static uint16_t bg = 0x25ae;
+static uint16_t fg;
+static uint16_t bg;
 
 // Initialization command sequence
 static uint8_t init_commands[] = {
@@ -152,6 +152,8 @@ static void draw_screen(uint16_t* buffer, dma_write_type_t write_type) {
     }
 
     uint16_t send_index = 0;
+    fg = display_info.fg_color;
+    bg = display_info.bg_color;
 
     for (uint16_t byte_idx = 0; byte_idx < ILI9341_BYTES_PER_ROW; ++byte_idx) {
         if (write_type == DMA_WRITE_CLEAR_SCREEN) {

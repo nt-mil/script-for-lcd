@@ -12,6 +12,9 @@
 #define MAX_NAME_LEN     32
 #define MAX_VALUE_LEN    32
 
+#define DEFAULT_FG_COLOR    (0x8ad6)
+#define DEFAULT_BG_COLOR    (0xae25)
+
 typedef struct {
     string_buffer_t name;
     string_buffer_t value;
@@ -31,7 +34,8 @@ void parse_layout(uint8_t* str, uint16_t length);
 bool get_next_script_line(string_buffer_t* script, string_buffer_t* line_out);
 uint8_t* get_prepared_layout(void);
 default_info_t* get_root_info(void);
-uint16_t parse_field_u16(const uint8_t* content, const char* key);
+int16_t parse_field_u16(const uint8_t* content, const char* key);
 uint8_t parse_field_u8(const uint8_t* content, const char* key);
 int parse_field(const uint8_t* content, const char* key, void* value, size_t value_size, field_type_t type);
+uint16_t swap_byte(uint16_t value);
 #endif /* _LAYOUT_BINARY_H_ */

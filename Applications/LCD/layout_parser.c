@@ -195,13 +195,13 @@ default_info_t* get_root_info(void) {
     return &root_info;
 }
 
-// Helper: parse uint16_t field from root content
-uint16_t parse_field_u16(const uint8_t* content, const char* key) {
+// Helper: parse int16_t field from root content
+int16_t parse_field_u16(const uint8_t* content, const char* key) {
     char pattern[32];
     snprintf(pattern, sizeof(pattern), "%s:", key);
 
     const char* found = strstr((const char*)content, pattern);
-    if (!found) return 0;
+    if (!found) return -1;
 
     uint16_t val = 0;
     sscanf(found + strlen(pattern), "%hi", &val);
@@ -258,6 +258,11 @@ int parse_field(const uint8_t* content, const char* key, void* value, size_t val
     return (result > 0) ? 1 : 0; // Success if parsed
 }
 
+// Helper: convert 16-bit value to RGB565
+uint16_t swap_byte(uint16_t value) {
+    return (value >> 8) | (value << 8);
+}
+
 static void execute_layout(string_buffer_t* str) {
     string_buffer_t layout_id;
     placeholder_pair_t pairs[MAX_PLACEHOLDERS];
@@ -297,8 +302,8 @@ static void extract_root_info(void) {
     uint16_t index = get_display_data_bank_index();
     display_info_t* display_info = (display_info_t*)read_from_databank(index);
 
-    display_info->fg_color = root_info.color;
-    display_info->bg_color = root_info.bg_color;
+    display_info->fg_color = (root_info.color == -1) ? DEFAULT_FG_COLOR : swap_byte(root_info.color);
+    display_info->bg_color = (root_info.color == -1) ? DEFAULT_BG_COLOR : swap_byte(root_info.bg_color);
 
     xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
 }

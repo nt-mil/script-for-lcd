@@ -49,7 +49,7 @@ void display_init(void) {
 // Display task to handle updates
 void display_task(void *param) {
     (void)param; // Unused parameter
-    EventBits_t events_to_wait = DISPLAY_EVENT_UPDATE;
+    static EventBits_t events_to_wait = (DISPLAY_EVENT_UPDATE | DISPLAY_EVENT_PERIOD);
 
     for (;;) {
         // Wait for display update events

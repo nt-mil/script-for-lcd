@@ -8,7 +8,6 @@
 #define MAX_CHAR_PER_LINE 50
 
 static ALIGN align;
-static AREA area;
 static uint8_t* rendering_layout;
 static string_buffer_t script;
 static string_buffer_t line;

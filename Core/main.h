@@ -26,6 +26,7 @@ extern "C" {
 #include "ili9341.h"
 
 // middleware headers
+#include "trigger.h"
 #include "mid_display.h"
 #include "databank.h"
 

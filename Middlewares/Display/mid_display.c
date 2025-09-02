@@ -48,21 +48,20 @@ void display_init(void) {
 
 // Display task to handle updates
 void display_task(void *param) {
-    (void)param; // Unused parameter
-    EventBits_t events_to_wait = DISPLAY_EVENT_UPDATE;
+    sched_entry_t* entry = (sched_entry_t*)param;
 
     for (;;) {
         // Wait for display update events
         EventBits_t events = xEventGroupWaitBits(
-            display_event,
-            events_to_wait,
+            entry->event_info.event_type,
+            entry->event_info.trigger_bit,
             pdTRUE,  // Clear bits on exit
             pdFALSE, // Wait for any bit
             portMAX_DELAY
         );
 
         // Process update event
-        if (events & DISPLAY_EVENT_UPDATE) {
+        if (events & entry->event_info.trigger_bit) {
             if (display_interface.update) {
                 display_interface.update();
             } else {

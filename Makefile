@@ -67,6 +67,7 @@ C_SOURCES =  \
 	Third_Parties/FreeRTOS/timers.c \
 	Third_Parties/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
 	Third_Parties/FreeRTOS/portable/MemMang/heap_4.c \
+	Middlewares/Scheduler/trigger.c \
 	Middlewares/Display/mid_display.c \
 	Middlewares/Data_Bank/databank.c \
 	Drivers/Display/ILI9341/ili9341.c \
@@ -146,6 +147,7 @@ C_INCLUDES =  \
 	-IThird_Parties/CMSIS/Include \
 	-IThird_Parties/FreeRTOS/include \
 	-IThird_Parties/FreeRTOS/portable/GCC/ARM_CM4F \
+	-IMiddlewares/Scheduler \
 	-IMiddlewares/Display \
 	-IMiddlewares/Data_Bank \
 	-IDrivers/Display \

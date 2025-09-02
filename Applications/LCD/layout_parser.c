@@ -6,7 +6,7 @@ extern EventGroupHandle_t display_event;
 
 /* ----------------- Static Variables --------------------- */
 // Buffer to store last parsed layout command (to avoid re-rendering same layout)
-static uint8_t last_layout_buffer[MAX_BUFFER_LEN];
+static uint8_t last_layout_buffer[MAX_LAYOUT_DATA_SIZE];
 
 // Total size of script content (layout data)
 static uint32_t script_content_size;

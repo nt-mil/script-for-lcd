@@ -7,13 +7,25 @@
 #define SCRIPT_HEADER_SIZE      8   // 4 bytes for script_size + 4 bytes for layout_count
 
 #define RENDERED_LAYOUT_MAX_SIZE 512
-#define MAX_BUFFER_LEN 101
+#define MAX_LAYOUT_DATA_SIZE 101
 #define MAX_PLACEHOLDERS 10
 #define MAX_NAME_LEN     32
 #define MAX_VALUE_LEN    32
 
 #define DEFAULT_FG_COLOR    (0x8ad6)
 #define DEFAULT_BG_COLOR    (0xae25)
+
+typedef enum {
+    LAYOUT_BUFFER_FREE = 0,        /**< Buffer is available for new data. */
+    LAYOUT_BUFFER_WRITING,         /**< Buffer is being written with new data. */
+    LAYOUT_BUFFER_IN_USE,          /**< Buffer is being processed or in use. */
+} layout_buffer_state_t;
+
+typedef struct {
+    uint8_t state;
+    uint16_t size;
+    uint8_t data[MAX_LAYOUT_DATA_SIZE];
+} layout_buffer_t;
 
 typedef struct {
     string_buffer_t name;

@@ -168,13 +168,39 @@ void test_display(void)
 */
 void Task_Init(void)
 {
-    BaseType_t ret = xTaskCreate(display_task, "display", 500, NULL, 5, NULL);
-    configASSERT(ret == pdPASS);
+    /* Register display task with the scheduler */
+    if (register_scheduler(display_task,
+                           "display",
+                           512,            /* stack size */
+                           NULL,           /* task parameter */
+                           5,              /* priority */
+                           DISPLAY_EVENT_PERIOD, /* event bits */
+                           20) == NULL)
+    {
+        printf("[Error] Failed to register display task!\n");
+        return;
+    }
 
-    // ret = xTaskCreate(test_display, "test", 300, NULL, 4, NULL);
+    /* Create scheduler task */
+    BaseType_t ret = xTaskCreate(scheduler_task,
+                                 "scheduler",
+                                 128,        /* stack size */
+                                 NULL,       /* task parameter */
+                                 2,          /* priority */
+                                 NULL);      /* task handle */
+    if (ret != pdPASS) {
+        printf("[Error] Failed to create scheduler task!\n");
+        return;
+    }
 
+    /* Start the scheduler */
+    printf("[Info] Starting FreeRTOS scheduler...\n");
     vTaskStartScheduler();
+
+    /* If the scheduler exits (should never happen) */
+    printf("[Error] Scheduler exited unexpectedly!\n");
 }
+
 
 /**
  * Idle task

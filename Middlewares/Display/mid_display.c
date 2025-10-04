@@ -3,17 +3,13 @@
 #include "ili9341.h"
 #include <string.h>
 
-EventGroupHandle_t display_event;
+static EventGroupHandle_t display_event = NULL;
 
 static uint16_t databank_index = 0xFFFE;
 static display_interface_t display_interface;
 
 static void init_event_group(void) {
-    display_event = xEventGroupCreate();
-    if (display_event == NULL) {
-        // Log error (assuming a logging mechanism exists)
-        // Handle failure, e.g., halt or retry
-    }
+    display_event = get_event_group();
 }
 
 static void register_display_info(display_info_t* info) {
@@ -40,10 +36,10 @@ void display_init(void) {
     display_info_t* display_info = driver->get_framebuffer();
     register_display_info(display_info);
 
-    init_event_group();
+    init_events();
 
     // Trigger initial display update
-    // xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+    set_event(DISPLAY_EVENT_UPDATE);
 }
 
 // Display task to handle updates
@@ -54,13 +50,22 @@ void display_task(void *param) {
         // Wait for display update events
         EventBits_t events = xEventGroupWaitBits(
             entry->event_info.event_type,
-            entry->event_info.trigger_bit,
+            entry->event_info.trigger_bit | entry->event_info.periodic_bit,
             pdTRUE,  // Clear bits on exit
             pdFALSE, // Wait for any bit
             portMAX_DELAY
         );
 
-        // Process update event
+        // Process periodic event
+        if (events & entry->event_info.periodic_bit) {
+            if (display_interface.update) {
+                display_interface.update();
+            } else {
+                // Log error: update function not set
+            }
+        }
+
+         // Process update event
         if (events & entry->event_info.trigger_bit) {
             if (display_interface.update) {
                 display_interface.update();

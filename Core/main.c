@@ -174,8 +174,9 @@ void Task_Init(void)
                            512,            /* stack size */
                            NULL,           /* task parameter */
                            5,              /* priority */
-                           DISPLAY_EVENT_PERIOD, /* event bits */
-                           20) == NULL)
+                           DISPLAY_EVENT_UPDATE,  /* update event bit */
+                           DISPLAY_EVENT_PERIOD, /* periodic event bit*/
+                           10000) == NULL)
     {
         printf("[Error] Failed to register display task!\n");
         return;

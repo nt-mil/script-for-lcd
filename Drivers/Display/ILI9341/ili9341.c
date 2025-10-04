@@ -2,7 +2,6 @@
 
 // SPI and GPIO configuration
 extern SPI_HandleTypeDef hspi2;
-extern EventGroupHandle_t display_event;
 
 // Timing constants (in milliseconds)
 #define ILI9341_DMA_TIMEOUT_COUNT   (100)
@@ -315,29 +314,29 @@ static bool has_timeout_expired(uint16_t timeout_ms) {
 void init_timeout_callback(TimerHandle_t timer) {
     switch (init_state) {
     case ILI9341_INIT_HW_RESET:
-        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+        set_event(DISPLAY_EVENT_UPDATE);
         break;
 
     case ILI9341_INIT_COMMANDS:
         if (has_timeout_expired(ILI9341_RESET_DELAY_MS))
         {
-            xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+            set_event(DISPLAY_EVENT_UPDATE);
         }
         break;
 
     case ILI9341_INIT_SLEEP_OUT:
-        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+        set_event(DISPLAY_EVENT_UPDATE);
         break;
     
     case ILI9341_INIT_SCREEN:
         if (has_timeout_expired(ILI9341_SLEEP_OUT_DELAY_MS))
         {
-            xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+            set_event(DISPLAY_EVENT_UPDATE);
         }
         break; 
 
     case ILI9341_INIT_BACKLIGHT:
-        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+        set_event(DISPLAY_EVENT_UPDATE);
         break;
 
     case ILI9341_INIT_COMPLETED:
@@ -383,7 +382,7 @@ static void process_initialization(void) {
         send_command(0x29); // set backlight
         current_state = ILI9341_STATE_RUNNING;
         init_state = ILI9341_INIT_COMPLETED;
-        xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
+        set_event(DISPLAY_EVENT_UPDATE);
         break;
 
     case ILI9341_INIT_COMPLETED:
@@ -507,7 +506,7 @@ void ili9341_dma_complete(void) {
     if (dma_control.multiple_byte)
     {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        xEventGroupSetBitsFromISR(display_event, DISPLAY_EVENT_UPDATE, &xHigherPriorityTaskWoken);
+        xEventGroupSetBitsFromISR(get_event_group(), DISPLAY_EVENT_UPDATE, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
 }

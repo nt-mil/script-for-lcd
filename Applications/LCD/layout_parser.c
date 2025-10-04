@@ -2,8 +2,6 @@
 #include "script_types.h"
 #include "layout_parser.h"
 
-extern EventGroupHandle_t display_event;
-
 /* ----------------- Static Variables --------------------- */
 // Buffer to store last parsed layout command (to avoid re-rendering same layout)
 static uint8_t last_layout_buffer[MAX_BUFFER_LEN];
@@ -304,8 +302,6 @@ static void extract_root_info(void) {
 
     display_info->fg_color = (root_info.color == -1) ? DEFAULT_FG_COLOR : swap_byte(root_info.color);
     display_info->bg_color = (root_info.color == -1) ? DEFAULT_BG_COLOR : swap_byte(root_info.bg_color);
-
-    xEventGroupSetBits(display_event, DISPLAY_EVENT_UPDATE);
 }
 
 static bool extract_layout_id(string_buffer_t* buffer, string_buffer_t* layout_id_out) {

@@ -81,28 +81,24 @@ make -j4
 
 ## 🧩 Integration in Code
 
-To use a layout in your firmware project:
+You can integrate the layout into your firmware by linking the generated object file and referencing it from your code.
 
-Define your desired layout in layout.tml.
+Currently, layout selection and configuration are done statically through predefined layout objects.
+However, the framework is designed to support dynamic layout selection in the future via descriptor strings.
 
-Run the Python script to generate the .o file automatically (the Makefile already includes the conversion step).
+### Example usage (concept only)
 
-In your C code, reference the layout by its ID.
-
-### Calling a Layout
-
-You can pass parameters such as font type, alignment, or colors inline using semicolon-separated key-value pairs:
+⚠️ Note: The function below is only an example of the intended syntax. It has not been implemented yet.
 
 ```c
-Display_LoadLayout("id:layout_name;font:small;align:left");
+// Concept example only — not yet implemented
+Display_LoadLayout("id:welcome;font:small;align:left;color:white;background:black");
 ```
 
-### Syntax rules:
+In the descriptor string:
 
 - Each pair has the form `key:value`
-
 - Pairs are separated by `;`
-
 - The first key must be `id`, followed by any number of additional parameters
 
 ### Example meaning:
@@ -116,8 +112,5 @@ Display_LoadLayout("id:layout_name;font:small;align:left");
 - `color:white` → sets foreground text color
 
 - `background:black` → sets background color
-
-This allows you to customize layout properties at runtime without modifying .tml files.
-
 ---
 
